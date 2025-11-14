@@ -1,4 +1,4 @@
-package com.example.replyapp
+package com.example.myfintech
 
 import org.junit.Test
 

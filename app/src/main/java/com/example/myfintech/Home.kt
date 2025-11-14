@@ -1,73 +1,119 @@
-package com.example.replyapp
+package com.example.myfintech
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.LocalCafe
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
+import com.example.myfintech.ui.components.AddTransactionDialog
+
 
 @Composable
-fun Home(modifier: Modifier = Modifier) {
-    Surface(modifier = modifier.fillMaxSize(), color = Color.White) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Main content using LazyColumn for scrollability
+fun Home(
+    modifier: Modifier = Modifier,
+    onProfileClicked: () -> Unit
+    ) {
+    var showTransactionDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showTransactionDialog = true },
+                containerColor = Color(0xFF673AB7),
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+            }
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+        ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 69.dp), // Space for the bottom navigation
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Header
                 item {
-                    Header()
+                    Header(
+                        onProfileClicked = onProfileClicked
+                    )
                 }
-                // Balance Card
                 item {
                     BalanceCard()
                 }
-                // Add Transaction Button
                 item {
                     AddTransactionButton()
                 }
-                // Recent Transactions Section
                 item {
                     RecentTransactions()
                 }
             }
 
-            // Bottom Navigation Bar
-            BottomNavigationBar(modifier = Modifier.align(Alignment.BottomCenter))
+            if (showTransactionDialog) {
+                AddTransactionDialog(
+                    onDismiss = { showTransactionDialog = false },
+                    onAddTransaction = {
+                        // TODO: Handle simpan data
+                        showTransactionDialog = false
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun Header() {
+private fun Header(
+    onProfileClicked: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -86,30 +132,38 @@ fun Header() {
                 fontWeight = FontWeight.Bold
             )
         }
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(
-                    brush = Brush.linearGradient(
-                        0f to Color(0xff2b7fff),
-                        1f to Color(0xff9810fa)
+
+        IconButton(
+            onClick = onProfileClicked,
+            modifier = Modifier.size(40.dp)
+        ){
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.linearGradient(
+                            0f to Color(0xff2b7fff),
+                            1f to Color(0xff9810fa)
+                        )
                     )
+            ){
+                Text(
+                    text = "RF",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
-        ) {
-            Text(
-                text = "RF",
-                color = Color.White,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
-            )
+            }
         }
+
+
     }
 }
 
 @Composable
-fun BalanceCard() {
+private fun BalanceCard() {
     val cardShape = RoundedCornerShape(14.dp)
     Column(
         modifier = Modifier
@@ -129,7 +183,11 @@ fun BalanceCard() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Image(imageVector = Icons.Filled.AccountBalanceWallet, contentDescription = "Total Balance")
+            Image(
+                imageVector = Icons.Filled.AccountBalanceWallet,
+                contentDescription = "Total Balance",
+                colorFilter = ColorFilter.tint(Color.White)
+            )
             Text("Total Balance", color = Color(0xffdbeafe), style = MaterialTheme.typography.bodyLarge)
         }
         Text(
@@ -156,7 +214,7 @@ fun BalanceCard() {
 }
 
 @Composable
-fun InfoChip(icon: ImageVector, label: String, amount: String, modifier: Modifier = Modifier) {
+private fun InfoChip(icon: ImageVector, label: String, amount: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
@@ -165,7 +223,12 @@ fun InfoChip(icon: ImageVector, label: String, amount: String, modifier: Modifie
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Image(imageVector = icon, contentDescription = label, modifier = Modifier.size(16.dp))
+            Image(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(16.dp),
+                colorFilter = ColorFilter.tint(Color.White)
+            )
             Text(text = label, color = Color(0xffdbeafe), style = MaterialTheme.typography.bodySmall)
         }
         Text(text = amount, color = Color.White, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
@@ -173,17 +236,22 @@ fun InfoChip(icon: ImageVector, label: String, amount: String, modifier: Modifie
 }
 
 @Composable
-fun AddTransactionButton() {
+private fun AddTransactionButton() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(78.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(color = Color(0xff155dfc)),
+            .background(color = Color(0xff155dfc))
+            .clickable { /* TODO: Handle Add Transaction Click */ },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(imageVector = Icons.Filled.Add, contentDescription = "Add Transaction")
+        Image(
+            imageVector = Icons.Filled.Add,
+            contentDescription = "Add Transaction",
+            colorFilter = ColorFilter.tint(Color.White)
+        )
         Spacer(Modifier.width(8.dp))
         Text(
             text = "Add Transaction",
@@ -195,7 +263,7 @@ fun AddTransactionButton() {
 }
 
 @Composable
-fun RecentTransactions() {
+private fun RecentTransactions() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -203,7 +271,7 @@ fun RecentTransactions() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Recent Transactions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("See All", color = Color(0xff155dfc), style = MaterialTheme.typography.bodyMedium)
+            Text("See All", color = Color(0xff155dfc), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.clickable { /* TODO: Handle See All Click */ })
         }
 
         TransactionRow(
@@ -236,7 +304,7 @@ fun RecentTransactions() {
 }
 
 @Composable
-fun TransactionRow(
+private fun TransactionRow(
     icon: ImageVector,
     title: String,
     category: String,
@@ -272,38 +340,9 @@ fun TransactionRow(
     }
 }
 
-@Composable
-fun BottomNavigationBar(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .shadow(elevation = 6.dp)
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        BottomNavItem(icon = Icons.Filled.Home, label = "Home", isSelected = true)
-        BottomNavItem(icon = Icons.Filled.CompareArrows, label = "Transactions")
-        BottomNavItem(icon = Icons.Filled.Analytics, label = "Analytics")
-        BottomNavItem(icon = Icons.Filled.Person, label = "Profile")
-    }
-}
-
-@Composable
-fun BottomNavItem(icon: ImageVector, label: String, isSelected: Boolean = false) {
-    val color = if (isSelected) Color(0xff155dfc) else Color(0xff6a7282)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.padding(vertical = 8.dp)
-    ) {
-        Image(imageVector = icon, contentDescription = label, colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color))
-        Text(text = label, color = color, style = MaterialTheme.typography.labelSmall)
-    }
-}
-
 @Preview(showBackground = true, widthDp = 385, heightDp = 852)
 @Composable
 private fun HomePreview() {
-    Home(Modifier)
+    Home(Modifier,
+        onProfileClicked = {})
 }
