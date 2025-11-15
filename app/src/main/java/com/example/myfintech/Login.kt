@@ -21,6 +21,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
     Surface(
@@ -50,7 +53,7 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
-                modifier = Modifier.fillMaxSize().padding(top = 100.dp)
+                modifier = Modifier.fillMaxSize().padding(top = 100.dp).padding(horizontal = 16.dp).verticalScroll(rememberScrollState())
             ) {
                 // Logo
                 Row(
@@ -102,7 +105,7 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                     color = Color.White,
                     shadowElevation = 12.dp,
                     modifier = Modifier
-                        .width(320.dp)
+                        .fillMaxWidth()
                         .wrapContentHeight()
                 ) {
                     Column(
