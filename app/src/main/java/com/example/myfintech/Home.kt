@@ -28,12 +28,9 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,16 +58,7 @@ fun Home(
     var showTransactionDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showTransactionDialog = true },
-                containerColor = Color(0xFF673AB7),
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
-            }
-        }
+        modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Box(modifier = Modifier
             .fillMaxSize()
@@ -90,7 +78,9 @@ fun Home(
                     BalanceCard()
                 }
                 item {
-                    AddTransactionButton()
+                    AddTransactionButton(
+                        onClick = { showTransactionDialog = true }
+                    )
                 }
                 item {
                     RecentTransactions()
@@ -236,14 +226,16 @@ private fun InfoChip(icon: ImageVector, label: String, amount: String, modifier:
 }
 
 @Composable
-private fun AddTransactionButton() {
+private fun AddTransactionButton(
+    onClick : () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(78.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(color = Color(0xff155dfc))
-            .clickable { /* TODO: Handle Add Transaction Click */ },
+            .clickable { onClick() },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
