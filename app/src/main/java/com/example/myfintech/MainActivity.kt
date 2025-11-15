@@ -6,19 +6,22 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.myfintech.ui.theme.ReplyAppTheme
+import com.example.myfintech.LoadingScreen
+import com.example.myfintech.ui.theme.MyFintechTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ReplyAppTheme {
+            MyFintechTheme {
                 MainApp()
             }
         }
@@ -79,21 +82,28 @@ fun MainApp() {
             }
              composable("login") {
                  Login(
-                     onLoginClicked = { navController.navigate("home"){
-                         popUpTo(0) { inclusive = true }
-                         launchSingleTop = true
-                     } },
+                     onLoginClicked = { navController.navigate("loading") },
                      onCreatedAccountClicked = { navController.navigate("register") }
                  )
              }
              composable("register") {
                  Register(
-                     onRegisterClicked = { navController.navigate("home"){
+                     onRegisterClicked = { navController.navigate("login"){
                          popUpTo(0) { inclusive = true }
                          launchSingleTop = true
                      } },
                      onLoginClicked = { navController.navigate("login") }
                  )
+             }
+             composable("loading") {
+                 LoadingScreen()
+                 LaunchedEffect(Unit) {
+                     delay(3000)
+                     navController.navigate("home") {
+                         popUpTo(0) { inclusive = true }
+                         launchSingleTop = true
+                     }
+                 }
              }
         }
     }
