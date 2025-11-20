@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ReplyApp"
+rootProject.name = "MyFintech"
 include(":app")

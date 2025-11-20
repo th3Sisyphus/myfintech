@@ -123,7 +123,6 @@ private fun AccountDetailsCard() {
             fontWeight = FontWeight.Bold
         )
         ProfileInfoRow(icon = Icons.Filled.Email, title = "Email", subtitle = "rainie.fanita@ti.ukdw.ac.id")
-        ProfileInfoRow(icon = Icons.Filled.Phone, title = "Phone", subtitle = "+62 812-2592-8281")
     }
 }
 
@@ -153,7 +152,6 @@ private fun ProfileInfoRow(icon: ImageVector, title: String, subtitle: String) {
 private fun SettingsMenu() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ProfileMenuItem(icon = Icons.Filled.Person, title = "Personal Information", subtitle = "Manage your details")
-        ProfileMenuItem(icon = Icons.Filled.Notifications, title = "Notifications", subtitle = "Configure alerts")
         ProfileMenuItem(icon = Icons.Filled.Security, title = "Security", subtitle = "Change password")
     }
 }

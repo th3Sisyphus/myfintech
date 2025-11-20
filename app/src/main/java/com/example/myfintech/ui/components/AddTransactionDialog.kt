@@ -177,7 +177,7 @@ fun AddTransactionDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (category.isEmpty()) "Select a category" else category,
+                            text = category.ifEmpty { "Select a category" },
                             color = textGray
                         )
                         Icon(
