@@ -17,6 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,9 +28,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.myfintech.db.SessionManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun Profile(modifier: Modifier = Modifier,
@@ -35,6 +42,7 @@ fun Profile(modifier: Modifier = Modifier,
         modifier = modifier.fillMaxSize(),
         color = Color(0xfff9fafb)
     ) {
+
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier
@@ -72,6 +80,11 @@ private fun ProfileHeader() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        val context = LocalContext.current
+        val session = remember { SessionManager(context) }
+        val email by session.userEmail.collectAsState(initial = "")
+        val username by session.userEmail.collectAsState(initial = "")
+
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -93,12 +106,12 @@ private fun ProfileHeader() {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Rainie Fanita",
+                text = "$username",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "rainie.fanita@ti.ukdw.ac.id",
+                text = "$email",
                 color = Color.Gray,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -117,12 +130,15 @@ private fun AccountDetailsCard() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val context = LocalContext.current
+        val session = remember { SessionManager(context) }
+        val email by session.userEmail.collectAsState(initial = "")
         Text(
             text = "Account Details",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
-        ProfileInfoRow(icon = Icons.Filled.Email, title = "Email", subtitle = "rainie.fanita@ti.ukdw.ac.id")
+        ProfileInfoRow(icon = Icons.Filled.Email, title = "Email", subtitle = "$email")
     }
 }
 
@@ -188,13 +204,23 @@ private fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String) 
 
 @Composable
 private fun LogOutButton(onLogOutClicked: () -> Unit) {
+    val context = LocalContext.current
+    val session = remember { SessionManager(context) }
+    val scope = rememberCoroutineScope()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Color.White)
             .border(BorderStroke(1.dp, Color(0xffffc9c9)), RoundedCornerShape(8.dp))
-            .clickable { onLogOutClicked() }
+            .clickable
+            {
+                scope.launch {
+                    session.clearSession()
+                    onLogOutClicked()
+                }
+            }
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
