@@ -1,5 +1,11 @@
 package com.example.myfintech
 
+import com.example.myfintech.dao.*
+import com.example.myfintech.db.*
+import com.example.myfintech.entity.*
+import com.example.myfintech.model.*
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,7 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -17,22 +23,47 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalContext
+
 @Composable
-fun Register(modifier: Modifier = Modifier,
-             onRegisterClicked: () -> Unit = {},
-             onLoginClicked: () -> Unit = {}) {
+fun Register(
+    modifier: Modifier = Modifier,
+    onRegisterClicked: () -> Unit = {},
+    onLoginClicked: () -> Unit = {}
+) {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
+        var fullnameInput by remember { mutableStateOf("") }
+        var emailInput by remember { mutableStateOf("") }
+
+        var passwordInput by remember { mutableStateOf("") }
+        var passwordVisible by remember { mutableStateOf(false) }
+
+        var confirmPasswordInput by remember { mutableStateOf("") }
+        var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+        // ERROR MESSAGE STATE
+        var errorMessage by remember { mutableStateOf("") }
+
+        // --- DATABASE & VIEWMODEL ---
+        val context = LocalContext.current
+        val __db = remember { DatabaseProvider.getDatabase(context) }
+        val __accountDao = remember { __db.accountDao() }
+        val __accountViewModel = remember { AccountViewModel(__accountDao) }
+
         Box(modifier = Modifier.fillMaxSize()) {
 
+            // BACKGROUND GRADIENT LIGHT
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -54,50 +85,12 @@ fun Register(modifier: Modifier = Modifier,
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
-                modifier = Modifier.fillMaxSize().padding(top = 100.dp).padding(horizontal = 16.dp).verticalScroll(rememberScrollState())
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 100.dp)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                // Logo
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF2B7FFF), Color(0xFFAD46FF))
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountBalance,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-
-                    Text(
-                        text = "MyFintech",
-                        style = TextStyle(
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF5E17EB)
-                        )
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = "Welcome to Fintech! Please sign up below",
-                    color = Color(0xFF6B7280),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center
-                )
 
                 Spacer(Modifier.height(60.dp))
 
@@ -113,86 +106,93 @@ fun Register(modifier: Modifier = Modifier,
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(vertical = 32.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AppRegistration,
-                                contentDescription = null,
-                                tint = Color(0xFF6B46C1)
-                            )
-                            Text(
-                                text = "Register",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
 
                         Spacer(Modifier.height(24.dp))
 
-                        // Inputs
+                        // Input Fields
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-                            // Full Name
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = fullnameInput,
+                                onValueChange = { fullnameInput = it },
                                 label = { Text("Full name") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Person, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Email
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = emailInput,
+                                onValueChange = { emailInput = it },
                                 label = { Text("Email address") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Email, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Password
+                            // PASSWORD FIELD
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = passwordInput,
+                                onValueChange = {
+                                    passwordInput = it
+                                    errorMessage = ""   // clear error when typing
+                                },
                                 label = { Text("Password") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Lock, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
-                                    Icon(Icons.Default.Visibility, contentDescription = null)
+                                    val image = if (passwordVisible)
+                                        Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff
+
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null)
+                                    }
                                 },
+                                visualTransformation = if (passwordVisible)
+                                    VisualTransformation.None else PasswordVisualTransformation(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Confirm Password
+                            // CONFIRM PASSWORD
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = confirmPasswordInput,
+                                onValueChange = {
+                                    confirmPasswordInput = it
+                                    errorMessage = ""  // clear error when typing
+                                },
                                 label = { Text("Confirm password") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Lock, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
-                                    Icon(Icons.Default.Visibility, contentDescription = null)
+                                    val image = if (confirmPasswordVisible)
+                                        Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff
+
+                                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null)
+                                    }
                                 },
+                                visualTransformation = if (confirmPasswordVisible)
+                                    VisualTransformation.None else PasswordVisualTransformation(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Sign Up Button
+                            // ERROR MESSAGE
+                            if (errorMessage.isNotEmpty()) {
+                                Text(
+                                    text = errorMessage,
+                                    color = Color.Red,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+
+                            // SIGN UP BUTTON
                             Box(
                                 modifier = Modifier
                                     .width(260.dp)
@@ -200,12 +200,31 @@ fun Register(modifier: Modifier = Modifier,
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
                                         Brush.linearGradient(
-                                            listOf(
-                                                Color(0xFF2B7FFF),
-                                                Color(0xFFAD46FF)
-                                            )
+                                            listOf(Color(0xFF2B7FFF), Color(0xFFAD46FF))
                                         )
-                                    ).clickable { onRegisterClicked() },
+                                    )
+                                    .clickable {
+                                        // VALIDATION LOGIC
+                                        if (passwordInput != confirmPasswordInput) {
+                                            errorMessage = "Confirm password is not the same"
+                                        } else if (passwordInput.isEmpty()) {
+                                            errorMessage = "Password cannot be empty"
+                                        } else {
+                                            errorMessage = ""
+
+                                            __accountViewModel.register(
+                                                fullnameInput,
+                                                emailInput,
+                                                passwordInput
+                                            ) { success, msg ->
+                                                if (!success) {
+                                                    errorMessage = msg
+                                                } else {
+                                                    onRegisterClicked()
+                                                }
+                                            }
+                                        }
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -218,24 +237,6 @@ fun Register(modifier: Modifier = Modifier,
                         }
 
                         Spacer(Modifier.height(20.dp))
-
-                        Row(
-                            modifier = Modifier.width(260.dp),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                "Already have an account? ",
-                                color = Color(0xFF2B7FFF),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                "Login here",
-                                color = Color(0xFFAD46FF),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { onLoginClicked() }
-                            )
-                        }
                     }
                 }
             }

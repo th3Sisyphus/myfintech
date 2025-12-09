@@ -23,6 +23,17 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import com.example.myfintech.db.DatabaseProvider
+import com.example.myfintech.model.AccountViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
@@ -30,6 +41,21 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
+        var emailInput by remember { mutableStateOf("") }
+
+        var passwordInput by remember { mutableStateOf("") }
+        var passwordVisible by remember { mutableStateOf(false) }
+
+        val scope = rememberCoroutineScope()
+
+        var errorMessage by remember { mutableStateOf("") }
+
+        // --- DATABASE & VIEWMODEL ---
+        val context = LocalContext.current
+        val __db = remember { DatabaseProvider.getDatabase(context) }
+        val __accountDao = remember { __db.accountDao() }
+        val __accountViewModel = remember { AccountViewModel(__accountDao) }
+
         Box(modifier = Modifier.fillMaxSize()) {
 
             Box(
@@ -135,8 +161,8 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
                             // Email
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = emailInput,
+                                onValueChange = {emailInput = it},
                                 label = { Text("Email address") },
                                 leadingIcon = {
                                     Icon(Icons.Default.Email, contentDescription = null)
@@ -146,21 +172,39 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Password
+                            // PASSWORD FIELD
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = passwordInput,
+                                onValueChange = {
+                                    passwordInput = it
+                                },
                                 label = { Text("Password") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Lock, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
-                                    Icon(Icons.Default.Visibility, contentDescription = null)
+                                    val image = if (passwordVisible)
+                                        Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff
+
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null)
+                                    }
                                 },
+                                visualTransformation = if (passwordVisible)
+                                    VisualTransformation.None else PasswordVisualTransformation(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
+
+                            // ERROR MESSAGE
+                            if (errorMessage.isNotEmpty()) {
+                                Text(
+                                    text = errorMessage,
+                                    color = Color.Red,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
 
                             // Sign In Button
                             Box(
@@ -170,12 +214,24 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
                                         Brush.linearGradient(
-                                            listOf(
-                                                Color(0xFF2B7FFF),
-                                                Color(0xFFAD46FF)
-                                            )
+                                            listOf(Color(0xFF2B7FFF), Color(0xFFAD46FF))
                                         )
-                                    ).clickable { onLoginClicked() },
+                                    )
+                                    .clickable {
+                                        scope.launch {
+                                            val account = __accountViewModel.login(
+                                                email = emailInput,
+                                                password = passwordInput
+                                            )
+
+                                            if (account != null) {
+                                                errorMessage = ""
+                                                onLoginClicked() // SUCCESS
+                                            } else {
+                                                errorMessage = "Incorrect email or password"
+                                            }
+                                        }
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
