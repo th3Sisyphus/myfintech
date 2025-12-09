@@ -13,7 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.myfintech.LoadingScreen
+import com.example.myfintech.presentation.auth.Login
+import com.example.myfintech.presentation.main.home.Home
 import com.example.myfintech.ui.theme.MyFintechTheme
 import kotlinx.coroutines.delay
 

@@ -1,4 +1,4 @@
-package com.example.myfintech
+package com.example.myfintech.presentation.auth
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
