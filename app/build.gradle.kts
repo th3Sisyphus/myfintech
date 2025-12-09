@@ -72,6 +72,9 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.datastore:datastore-core:1.1.1")
+
     // --- Test and Debug Dependencies ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

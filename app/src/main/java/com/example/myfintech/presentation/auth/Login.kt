@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.myfintech.db.DatabaseProvider
+import com.example.myfintech.db.SessionManager
 import com.example.myfintech.model.AccountViewModel
 import kotlinx.coroutines.launch
 
@@ -52,9 +54,15 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
         // --- DATABASE & VIEWMODEL ---
         val context = LocalContext.current
+        val sessionManager = SessionManager(context)
+        val email by sessionManager.userEmail.collectAsState(initial = "")
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
-        val __accountViewModel = remember { AccountViewModel(__accountDao) }
+        val __accountViewModel = remember { AccountViewModel(__accountDao,sessionManager) }
+
+        if (!email.isNullOrBlank()) {
+            onLoginClicked()
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
 

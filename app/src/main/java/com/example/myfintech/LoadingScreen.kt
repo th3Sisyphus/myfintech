@@ -15,11 +15,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myfintech.db.SessionManager
 import com.example.myfintech.ui.theme.PurpleDark
 import com.example.myfintech.ui.theme.PurpleLight // Pastikan ini diimpor atau sesuaikan dengan warna Anda
 
@@ -40,6 +42,11 @@ fun LoadingScreen() {
             .background(Color(0xFFF9FAFB)), // Warna latar belakang seperti aplikasi Anda
         contentAlignment = Alignment.Center
     ) {
+        val context = LocalContext.current
+        val session = remember { SessionManager(context) }
+        val email by session.userEmail.collectAsState(initial = "")
+        val username by session.userEmail.collectAsState(initial = "")
+
         // Efek blur di tengah seperti di Login/Register
         Box(
             modifier = Modifier
@@ -102,7 +109,7 @@ fun LoadingScreen() {
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Welcome back, Rainie Fanita !",
+                text = "Welcome back, $username !",
                 color = Color(0xFF6B7280),
                 fontSize = 16.sp
             )

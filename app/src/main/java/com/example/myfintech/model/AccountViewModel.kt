@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.myfintech.dao.*
+import com.example.myfintech.db.*
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AccountViewModel(private val dao: AccountDao) : ViewModel() {
+class AccountViewModel(private val dao: AccountDao, private val session: SessionManager) : ViewModel() {
 
     private val _emailState = MutableStateFlow("")
     val emailState: StateFlow<String> = _emailState.asStateFlow()
@@ -50,9 +51,15 @@ class AccountViewModel(private val dao: AccountDao) : ViewModel() {
     }
 
     suspend fun login(email: String, password: String): Account? {
-        val account = dao.getAccountByEmail(email)
-        return if (account != null && account.password == password)
+            val account = dao.getAccountByEmail(email)
+        return if (account != null && account.password == password){
+            // SAVE SESSION HERE
+            session.saveUserSession(
+                email = account.email,
+                fullname = account.fullname
+            )
             account
+        }
         else
             null
     }

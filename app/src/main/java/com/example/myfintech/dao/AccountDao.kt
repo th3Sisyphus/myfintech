@@ -4,7 +4,6 @@ import androidx.room.*
 
 @Dao
 interface AccountDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun register(account: Account)
 

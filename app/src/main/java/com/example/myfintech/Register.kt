@@ -57,9 +57,10 @@ fun Register(
 
         // --- DATABASE & VIEWMODEL ---
         val context = LocalContext.current
+        val sessionManager = SessionManager(context)
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
-        val __accountViewModel = remember { AccountViewModel(__accountDao) }
+        val __accountViewModel = remember { AccountViewModel(__accountDao,sessionManager) }
 
         Box(modifier = Modifier.fillMaxSize()) {
 
