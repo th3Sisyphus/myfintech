@@ -25,6 +25,12 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
     private val _emails = MutableStateFlow<List<String>>(emptyList())
     val emails: StateFlow<List<String>> = _emails.asStateFlow()
 
+    private val _currentName = MutableStateFlow("User")
+    val currentName: StateFlow<String> = _currentName.asStateFlow()
+
+    private val _currentEmail = MutableStateFlow("")
+    val currentEmail: StateFlow<String> = _currentEmail.asStateFlow()
+
     fun initEmail() {
         viewModelScope.launch {
             _emails.value = dao.getAllEmails()
@@ -53,6 +59,24 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         }
     }
 
+    fun loadUserData() {
+        viewModelScope.launch {
+            // Asumsi: SessionManager punya fungsi getFullname() dan getEmail()
+            // Jika menggunakan DataStore (Flow), gunakan .collect
+            // Jika SharedPreferences (Sync), langsung ambil value
+
+            // Contoh implementasi jika SessionManager menggunakan Flow (DataStore):
+            session.getFullname().collect { name ->
+                _currentName.value = name ?: "User"
+            }
+        }
+        viewModelScope.launch {
+            session.getEmail().collect { email ->
+                _currentEmail.value = email ?: ""
+            }
+        }
+    }
+
     suspend fun login(email: String, password: String): Account? {
         val account = dao.getAccountByEmail(email)
         return if (account != null && account.password == password){
@@ -61,6 +85,7 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
                 email = account.email,
                 fullname = account.fullname
             )
+            loadUserData()
             account
         }
         else
