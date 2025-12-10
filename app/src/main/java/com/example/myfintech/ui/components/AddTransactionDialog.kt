@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,9 +22,23 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.myfintech.db.DatabaseProvider
 import com.example.myfintech.db.SessionManager
-import com.example.myfintech.model.AccountViewModel
 import com.example.myfintech.model.TransactionViewModel
 import com.example.myfintech.ui.theme.buttonGradient
+
+// ml kit
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +65,11 @@ fun AddTransactionDialog(
     val __db = remember { DatabaseProvider.getDatabase(context) }
     val __transactionDao = remember { __db.transactionDao() }
     val __transactionViewModel = remember { TransactionViewModel(__transactionDao) }
+
+    // OCR
+    // When using Latin script library
+    val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -227,6 +245,48 @@ fun AddTransactionDialog(
 
 
                 Spacer(modifier = Modifier.height(32.dp))
+
+//                val context = LocalContext.current
+
+                // Launcher for picking a single file
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri: Uri? ->
+                    uri?.let { fileUri ->
+                        try {
+                            val image = InputImage.fromFilePath(context, fileUri)
+                            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+                            recognizer.process(image)
+                                .addOnSuccessListener { visionText ->
+                                    // Text recognized from the image
+                                    Toast.makeText(context, visionText.text, Toast.LENGTH_LONG).show()
+                                    Log.d("OCR", "Detected text: ${visionText.text}")
+                                    // Regex untuk angka, bisa ada koma sebagai pemisah ribuan
+                                    val numberRegex = Regex("""[\d,]+""")
+
+                                    val largestNum = numberRegex.findAll(visionText.text) // cari semua angka
+                                        .map { it.value.replace(",", "") } // hapus koma
+                                        .mapNotNull { it.toIntOrNull() }  // konversi ke Int, skip yg gagal
+                                        .maxOrNull() // ambil angka terbesar
+                                    amount = largestNum.toString() // set ke amount
+
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Failed to recognize text", Toast.LENGTH_SHORT).show()
+                                    Log.e("OCR", "Error: ${e.message}")
+                                }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                Button(onClick = {
+                    // Launch file picker for any file type
+                    launcher.launch("*/*") // Use "image/*", "text/*" etc. if you want
+                }) {
+                    Text("Select File")
+                }
 
                 // --- Action Buttons ---
                 Row(

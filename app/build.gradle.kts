@@ -69,11 +69,16 @@ dependencies {
 
 
     implementation("androidx.room:room-runtime:2.6.1")
+    implementation(libs.play.services.mlkit.text.recognition.common)
+    implementation(libs.play.services.mlkit.text.recognition)
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore-core:1.1.1")
+
+    // ML Kit Text Recognition
+    implementation("com.google.mlkit:text-recognition:16.0.0")
 
     // --- Test and Debug Dependencies ---
     testImplementation(libs.junit)
