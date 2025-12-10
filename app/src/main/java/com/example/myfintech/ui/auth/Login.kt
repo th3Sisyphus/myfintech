@@ -1,7 +1,6 @@
-package com.example.myfintech
+package com.example.myfintech.ui.auth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,12 +20,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+
 @Composable
-fun Register(modifier: Modifier = Modifier,
-             onRegisterClicked: () -> Unit = {},
-             onLoginClicked: () -> Unit = {}) {
+fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
@@ -93,7 +92,7 @@ fun Register(modifier: Modifier = Modifier,
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "Welcome to Fintech! Please sign up below",
+                    text = "Welcome back! Please login to continue",
                     color = Color(0xFF6B7280),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center
@@ -118,12 +117,12 @@ fun Register(modifier: Modifier = Modifier,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.AppRegistration,
+                                imageVector = Icons.Default.Login,
                                 contentDescription = null,
                                 tint = Color(0xFF6B46C1)
                             )
                             Text(
-                                text = "Register",
+                                text = "Login",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -133,19 +132,6 @@ fun Register(modifier: Modifier = Modifier,
 
                         // Inputs
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                            // Full Name
-                            OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
-                                label = { Text("Full name") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Person, contentDescription = null)
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.width(260.dp)
-                            )
 
                             // Email
                             OutlinedTextField(
@@ -176,23 +162,7 @@ fun Register(modifier: Modifier = Modifier,
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Confirm Password
-                            OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
-                                label = { Text("Confirm password") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Lock, contentDescription = null)
-                                },
-                                trailingIcon = {
-                                    Icon(Icons.Default.Visibility, contentDescription = null)
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.width(260.dp)
-                            )
-
-                            // Sign Up Button
+                            // Sign In Button
                             Box(
                                 modifier = Modifier
                                     .width(260.dp)
@@ -205,11 +175,11 @@ fun Register(modifier: Modifier = Modifier,
                                                 Color(0xFFAD46FF)
                                             )
                                         )
-                                    ).clickable { onRegisterClicked() },
+                                    ).clickable { onLoginClicked() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "Sign Up",
+                                    "Sign In",
                                     color = Color.White,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold
@@ -221,19 +191,18 @@ fun Register(modifier: Modifier = Modifier,
 
                         Row(
                             modifier = Modifier.width(260.dp),
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Already have an account? ",
+                                "Forgot password?",
                                 color = Color(0xFF2B7FFF),
                                 fontSize = 14.sp
                             )
                             Text(
-                                "Login here",
+                                "Create account",
                                 color = Color(0xFFAD46FF),
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { onLoginClicked() }
+                                modifier = Modifier.clickable {onCreatedAccountClicked()}
                             )
                         }
                     }
@@ -245,9 +214,6 @@ fun Register(modifier: Modifier = Modifier,
 
 @Preview(showBackground = true, widthDp = 385, heightDp = 852)
 @Composable
-private fun RegisterPreview() {
-    Register(
-        onRegisterClicked = {},
-        onLoginClicked = {}
-    )
+private fun LoginPreview() {
+    Login(onLoginClicked = {}, onCreatedAccountClicked = {})
 }

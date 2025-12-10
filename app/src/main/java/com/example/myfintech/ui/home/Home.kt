@@ -1,4 +1,4 @@
-package com.example.myfintech.presentation.main.home
+package com.example.myfintech.ui.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -47,7 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.myfintech.ui.components.AddTransactionDialog
+import com.example.myfintech.ui.transaction.add.AddTransactionDialog
 
 
 @Composable

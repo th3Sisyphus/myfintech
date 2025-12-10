@@ -1,5 +1,6 @@
-package com.example.myfintech.ui.components
+package com.example.myfintech.ui.transaction.add
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -202,7 +203,7 @@ fun AddTransactionDialog(
                             .weight(1f)
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
                     ) {
                         Text("Cancel")

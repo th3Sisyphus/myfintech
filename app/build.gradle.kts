@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -64,6 +65,13 @@ dependencies {
 
     // For calculating window size classes for responsive UI
     implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
+
+    // Room & DataStore
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)     // Wajib untuk Coroutines support
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
+
 
 
     // --- Test and Debug Dependencies ---

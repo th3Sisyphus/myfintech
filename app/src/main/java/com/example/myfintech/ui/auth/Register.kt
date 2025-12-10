@@ -1,6 +1,7 @@
-package com.example.myfintech.presentation.auth
+package com.example.myfintech.ui.auth
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,12 +21,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-
 @Composable
-fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
+fun Register(modifier: Modifier = Modifier,
+             onRegisterClicked: () -> Unit = {},
+             onLoginClicked: () -> Unit = {}) {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
@@ -92,7 +93,7 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "Welcome back! Please login to continue",
+                    text = "Welcome to Fintech! Please sign up below",
                     color = Color(0xFF6B7280),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center
@@ -117,12 +118,12 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Login,
+                                imageVector = Icons.Default.AppRegistration,
                                 contentDescription = null,
                                 tint = Color(0xFF6B46C1)
                             )
                             Text(
-                                text = "Login",
+                                text = "Register",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -132,6 +133,19 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
                         // Inputs
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                            // Full Name
+                            OutlinedTextField(
+                                value = "",
+                                onValueChange = {},
+                                label = { Text("Full name") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Person, contentDescription = null)
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.width(260.dp)
+                            )
 
                             // Email
                             OutlinedTextField(
@@ -162,7 +176,23 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Sign In Button
+                            // Confirm Password
+                            OutlinedTextField(
+                                value = "",
+                                onValueChange = {},
+                                label = { Text("Confirm password") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Lock, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Visibility, contentDescription = null)
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.width(260.dp)
+                            )
+
+                            // Sign Up Button
                             Box(
                                 modifier = Modifier
                                     .width(260.dp)
@@ -175,11 +205,11 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                                 Color(0xFFAD46FF)
                                             )
                                         )
-                                    ).clickable { onLoginClicked() },
+                                    ).clickable { onRegisterClicked() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "Sign In",
+                                    "Sign Up",
                                     color = Color.White,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold
@@ -191,18 +221,19 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
                         Row(
                             modifier = Modifier.width(260.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                "Forgot password?",
+                                "Already have an account? ",
                                 color = Color(0xFF2B7FFF),
                                 fontSize = 14.sp
                             )
                             Text(
-                                "Create account",
+                                "Login here",
                                 color = Color(0xFFAD46FF),
                                 fontSize = 14.sp,
-                                modifier = Modifier.clickable {onCreatedAccountClicked()}
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { onLoginClicked() }
                             )
                         }
                     }
@@ -214,6 +245,9 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
 @Preview(showBackground = true, widthDp = 385, heightDp = 852)
 @Composable
-private fun LoginPreview() {
-    Login(onLoginClicked = {}, onCreatedAccountClicked = {})
+private fun RegisterPreview() {
+    Register(
+        onRegisterClicked = {},
+        onLoginClicked = {}
+    )
 }

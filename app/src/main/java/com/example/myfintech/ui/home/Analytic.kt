@@ -1,4 +1,4 @@
-package com.example.myfintech
+package com.example.myfintech.ui.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

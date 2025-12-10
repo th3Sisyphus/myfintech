@@ -13,10 +13,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.myfintech.presentation.auth.Login
-import com.example.myfintech.presentation.main.home.Home
-import com.example.myfintech.ui.theme.MyFintechTheme
 import kotlinx.coroutines.delay
+
+import com.example.myfintech.ui.auth.*
+import com.example.myfintech.ui.home.*
+import com.example.myfintech.ui.theme.MyFintechTheme
+import com.example.myfintech.ui.components.*
+import com.example.myfintech.ui.profile.*
+import com.example.myfintech.ui.transaction.list.*
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,31 +87,31 @@ fun MainApp() {
                     } }
                 )
             }
-             composable("login") {
-                 Login(
-                     onLoginClicked = { navController.navigate("loading") },
-                     onCreatedAccountClicked = { navController.navigate("register") }
-                 )
-             }
-             composable("register") {
-                 Register(
-                     onRegisterClicked = { navController.navigate("login"){
-                         popUpTo(0) { inclusive = true }
-                         launchSingleTop = true
-                     } },
-                     onLoginClicked = { navController.navigate("login") }
-                 )
-             }
-             composable("loading") {
-                 LoadingScreen()
-                 LaunchedEffect(Unit) {
-                     delay(3000)
-                     navController.navigate("home") {
-                         popUpTo(0) { inclusive = true }
-                         launchSingleTop = true
-                     }
-                 }
-             }
+            composable("login") {
+                Login(
+                    onLoginClicked = { navController.navigate("loading") },
+                    onCreatedAccountClicked = { navController.navigate("register") }
+                )
+            }
+            composable("register") {
+                Register(
+                    onRegisterClicked = { navController.navigate("login"){
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    } },
+                    onLoginClicked = { navController.navigate("login") }
+                )
+            }
+            composable("loading") {
+                LoadingScreen()
+                LaunchedEffect(Unit) {
+                    delay(3000)
+                    navController.navigate("home") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
         }
     }
 }

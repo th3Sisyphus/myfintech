@@ -1,4 +1,4 @@
-package com.example.myfintech
+package com.example.myfintech.ui.transaction.list
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
