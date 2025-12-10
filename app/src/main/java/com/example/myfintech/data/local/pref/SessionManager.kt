@@ -24,14 +24,23 @@ class SessionManager(private val context: Context) {
     }
 
     // Read session
-    val userEmail: Flow<String?> = context.dataStore.data
+    private val userEmail: Flow<String?> = context.dataStore.data
         .map { prefs -> prefs[EMAIL] }
 
-    val fullname: Flow<String?> = context.dataStore.data
+    private val fullname: Flow<String?> = context.dataStore.data
         .map { prefs -> prefs[FULLNAME] }
 
     // Delete session (logout)
     suspend fun clearSession() {
         context.dataStore.edit { it.clear() }
+    }
+
+    fun getFullname(): Flow<String?> {
+        return fullname
+    }
+
+    // Mengembalikan Flow email
+    fun getEmail(): Flow<String?> {
+        return userEmail
     }
 }
