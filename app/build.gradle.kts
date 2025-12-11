@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.auth)
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // --- LIBRARIES ADDED USING SIMPLE DOUBLE QUOTES ---
@@ -66,6 +67,8 @@ dependencies {
 
     // For calculating window size classes for responsive UI
     implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
+
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Gunakan BOM agar aman
 
     // Room & DataStore
     implementation(libs.androidx.room.runtime)

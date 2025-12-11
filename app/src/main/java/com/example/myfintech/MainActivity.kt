@@ -13,32 +13,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.delay
-
-import com.example.myfintech.ui.auth.*
-import com.example.myfintech.ui.home.*
+import com.example.myfintech.ui.auth.Login
+import com.example.myfintech.ui.home.Home
 import com.example.myfintech.ui.theme.MyFintechTheme
-import com.example.myfintech.ui.components.*
-import com.example.myfintech.ui.profile.*
-import com.example.myfintech.ui.transaction.list.*
-import com.example.myfintech.viewmodel.AccountViewModel
+import com.example.myfintech.ui.components.BottomNav
+import com.example.myfintech.ui.components.LoadingScreen
+import com.example.myfintech.ui.home.Analytic
+import com.example.myfintech.ui.transaction.list.Transactions
+import com.example.myfintech.ui.auth.Register
+import com.example.myfintech.ui.profile.Profile
 
-
-import com.example.myfintech.data.local.database.DatabaseProvider
-import com.example.myfintech.data.local.pref.SessionManager
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // init database session
-        val database = DatabaseProvider.getDatabase(applicationContext)
-        val sessionManager = SessionManager(applicationContext)
-
-        val accountViewModel = AccountViewModel(database.accountDao(), sessionManager)
-
-        accountViewModel.loadUserData()
-
         setContent {
             MyFintechTheme {
                 MainApp()
@@ -89,7 +78,7 @@ fun MainApp() {
                 Transactions()
             }
             composable("analytics") {
-                Analytics()
+                Analytic()
             }
             composable("profile") {
                 Profile(
