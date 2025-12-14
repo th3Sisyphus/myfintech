@@ -21,8 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.example.myfintech.data.auth.GoogleAuthClient
+import com.example.myfintech.data.local.dao.AccountDao
+import com.example.myfintech.data.local.entities.Account
 
-class AccountViewModel(private val dao: AccountDao, private val session: SessionManager) : ViewModel() {
+class AccountViewModel(private val dao: AccountDao, private val session: SessionManager,private val googleAuth: GoogleAuthClient ) : ViewModel() {
 
     private val _emailState = MutableStateFlow("")
     val emailState: StateFlow<String> = _emailState.asStateFlow()
@@ -44,37 +47,46 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         }
     }
 
-    fun signInWithGoogle(credential: AuthCredential, onResult: (Boolean, String) -> Unit ) {
+    fun handleGoogleLogin(intent: android.content.Intent, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            try {
-                val authResult = auth.signInWithCredential(credential).await()
-                val firebaseUser = authResult.user
-                if (firebaseUser != null) {
-                    val email = firebaseUser.email ?: ""
-                    val name = firebaseUser.displayName ?: "Google User"
+            val success = googleAuth.signInWithIntent(intent)
+            if (success) {
+                val firebaseUser = googleAuth.getCurrentUser()
+                firebaseUser?.let { user ->
+                    val email = user.email ?: ""
+                    val name = user.displayName ?: "Google User"
 
+                    // CRITICAL: Sinkronisasi dengan Room Database
                     val existingAccount = dao.getAccountByEmail(email)
+
                     if (existingAccount == null) {
-                        // Jika belum ada, buatkan akun lokal baru
+                        // Register otomatis di lokal agar Foreign Key Transaksi aman
                         val newAccount = Account(
                             fullname = name,
                             email = email,
-                            password = "" // Password kosong karena login via Google
+                            password = "" // Kosongkan password untuk user Google
                         )
                         dao.register(newAccount)
                     }
 
+                    // Simpan sesi seperti login manual
                     session.saveUserSession(email, name)
-                    loadUserData()
-                    onResult(true, "Login Berhasil: $name")
-
-                }else{
-                    onResult(false, "Login Gagal: User tidak ditemukan")
-                }
-            } catch (e: Exception) {
-                Log.e("AccountViewModel", "signInWithGoogle: ${e.message}", e)
-                onResult(false, "Login Gagal: ${e.message}")
+                    loadUserData() // Refresh data di UI
+                    onResult(true)
+                } ?: onResult(false)
+            } else {
+                onResult(false)
             }
+        }
+    }
+
+    fun getGoogleSignInIntent() = googleAuth.getSignInIntent()
+
+    fun logout(onResult: () -> Unit) {
+        viewModelScope.launch {
+            googleAuth.signOut() // Logout Firebase & Google
+            session.clearSession()
+            onResult()
         }
     }
     fun register(fullname: String, email: String, password: String, onResult: (Boolean, String) -> Unit = {_,_->}) {

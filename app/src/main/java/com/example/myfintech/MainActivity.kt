@@ -22,22 +22,39 @@ import com.example.myfintech.ui.home.Analytic
 import com.example.myfintech.ui.transaction.list.Transactions
 import com.example.myfintech.ui.auth.Register
 import com.example.myfintech.ui.profile.Profile
+import com.example.myfintech.data.auth.GoogleAuthClient
+import com.example.myfintech.data.local.database.DatabaseProvider
+import com.example.myfintech.data.local.pref.SessionManager
+import com.example.myfintech.viewmodel.AccountViewModel
 
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val database = DatabaseProvider.getDatabase(applicationContext)
+        val sessionManager = SessionManager(applicationContext)
+        val googleAuthClient = GoogleAuthClient(applicationContext)
+
+        val accountViewModel = AccountViewModel(
+            dao = database.accountDao(),
+            session = sessionManager,
+            googleAuth = googleAuthClient
+        )
+
+        accountViewModel.loadUserData()
+
         setContent {
             MyFintechTheme {
-                MainApp()
+                MainApp(accountViewModel)
             }
         }
     }
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(accountViewModel: AccountViewModel) {
     val navController = rememberNavController()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -48,7 +65,7 @@ fun MainApp() {
             val isMainScreen = currentRoute in listOf("home", "transactions", "analytics", "profile")
             if (isMainScreen) {
                 BottomNav(
-                    currentRoute = currentRoute!!,
+                    currentRoute = currentRoute ?: "home",
                     onNavigate = { route ->
                         navController.navigate(route) {
                             launchSingleTop = true
@@ -82,25 +99,32 @@ fun MainApp() {
             }
             composable("profile") {
                 Profile(
-                    onLogOutClicked = { navController.navigate("login"){
-                        popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    } }
+                    onLogOutClicked = {
+                        accountViewModel.logout {
+                            navController.navigate("login") {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 )
             }
             composable("login") {
-                Login(
+                Login(viewModel = accountViewModel,
                     onLoginClicked = { navController.navigate("loading") },
                     onCreatedAccountClicked = { navController.navigate("register") }
                 )
             }
             composable("register") {
                 Register(
+                    viewModel = accountViewModel,
                     onRegisterClicked = { navController.navigate("login"){
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     } },
-                    onLoginClicked = { navController.navigate("login") }
+                    onLoginClicked = { navController.navigate("login") },
+                    onGoogleSignUpSuccess = { navController.navigate("loading") }
+
                 )
             }
             composable("loading") {

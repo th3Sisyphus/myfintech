@@ -1,5 +1,6 @@
 package com.example.myfintech.ui.auth
 
+import android.app.Activity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,12 +38,26 @@ import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.myfintech.data.auth.GoogleAuthClient
+
 @Composable
-fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
+fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit )  {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
+        // Launcher untuk menangkap hasil dari Activity Google Sign In
+        val googleSignInLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                viewModel.handleGoogleLogin(result.data!!) { success ->
+                    if (success) onLoginClicked()
+                }
+            }
+        }
         var emailInput by remember { mutableStateOf("") }
 
         var passwordInput by remember { mutableStateOf("") }
@@ -58,7 +73,10 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
         val email by sessionManager.getEmail().collectAsState(initial = "")
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
-        val __accountViewModel = remember { AccountViewModel(__accountDao,sessionManager) }
+        val __accountViewModel = remember { AccountViewModel(
+            __accountDao, sessionManager,
+            googleAuth = GoogleAuthClient(context)
+        ) }
 
         if (!email.isNullOrBlank()) {
             onLoginClicked()
@@ -86,8 +104,13 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
-                modifier = Modifier.fillMaxSize().padding(top = 100.dp).padding(horizontal = 16.dp).verticalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+//                    .padding(top = 20.dp)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding()
             ) {
                 // Logo
                 Row(
@@ -253,6 +276,29 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
                         Spacer(Modifier.height(20.dp))
 
+                        Button(
+                            onClick = {
+                                val intent = viewModel.getGoogleSignInIntent()
+                                googleSignInLauncher.launch(intent)
+                            },
+                            modifier = Modifier
+                                .width(260.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White
+                            ),
+                            border = BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            Text(
+                                text = "Sign In with Google",
+                                color = Color.Black, // Text hitam di atas background putih
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
                         Row(
                             modifier = Modifier.width(260.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -276,8 +322,8 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
     }
 }
 
-@Preview(showBackground = true, widthDp = 385, heightDp = 852)
-@Composable
-private fun LoginPreview() {
-    Login(onLoginClicked = {}, onCreatedAccountClicked = {})
-}
+//@Preview(showBackground = true, widthDp = 385, heightDp = 852)
+//@Composable
+//private fun LoginPreview() {
+//    Login(viewModel = AccountViewModel,onLoginClicked = {}, onCreatedAccountClicked = {})
+//}
