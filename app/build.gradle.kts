@@ -76,7 +76,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)     // Wajib untuk Coroutines support
+    implementation(libs.googleid)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 

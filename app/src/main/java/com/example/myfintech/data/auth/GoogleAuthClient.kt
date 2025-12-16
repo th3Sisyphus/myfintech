@@ -1,41 +1,65 @@
 package com.example.myfintech.data.auth
 
 import android.content.Context
-import android.content.Intent
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.auth.GoogleAuthProvider
+import android.util.Log
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.example.myfintech.R
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.tasks.await
 
 
 class GoogleAuthClient(private val context: Context){
     private val auth  = Firebase.auth
+    private val credentialManager = CredentialManager.create(context)
+    private val TAG = "GoogleAuthClient"
 
-    fun getSignInIntent(): Intent{
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken("731432835676-65n9htvk5q934fip7tgm0g6mhs965egt.apps.googleusercontent.com").requestEmail().build()
 
-        val googleSignInClient = GoogleSignIn.getClient(context, gso)
-        return googleSignInClient.signInIntent
-    }
+    // Fungsi login baru menggunakan Credential Manager
+    suspend fun signIn(activityContext: Context): Pair<Boolean, String?> {
+        try {
+            val webClientId = context.getString(R.string.default_web_client_id)
 
-    suspend fun signInWithIntent(intent: Intent): Boolean {
-        return try {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
-            val account = task.await()
-            val googleToken = account.idToken
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(true)
+                .build()
 
-            if (googleToken != null) {
-                val firebaseCredential = GoogleAuthProvider.getCredential(googleToken, null)
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+
+            val result = credentialManager.getCredential(
+                request = request,
+                context = context
+            )
+
+            val credential = result.credential
+            if (credential is GoogleIdTokenCredential) {
+                val googleIdToken = credential.idToken
+
+                val firebaseCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
                 auth.signInWithCredential(firebaseCredential).await()
-                true
+
+                Log.d(TAG, "Firebase sign in successful")
+                return Pair(true, null)
             } else {
-                false
+                Log.e(TAG, "Unexpected credential type")
+                return Pair(false, "Unexpected credential type")
             }
+
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "Credential Manager Error", e)
+            return Pair(false, e.message)
         } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            Log.e(TAG, "Unknown Sign In Error", e)
+            return Pair(false, e.message)
         }
     }
 
@@ -43,6 +67,5 @@ class GoogleAuthClient(private val context: Context){
 
     fun signOut() {
         auth.signOut()
-        GoogleSignIn.getClient(context, GoogleSignInOptions.DEFAULT_SIGN_IN).signOut()
     }
 }

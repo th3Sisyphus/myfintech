@@ -48,16 +48,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
-        // Launcher untuk menangkap hasil dari Activity Google Sign In
-        val googleSignInLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                viewModel.handleGoogleLogin(result.data!!) { success ->
-                    if (success) onLoginClicked()
-                }
-            }
-        }
+
         var emailInput by remember { mutableStateOf("") }
 
         var passwordInput by remember { mutableStateOf("") }
@@ -249,17 +240,21 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                                         )
                                     )
                                     .clickable {
-                                        scope.launch {
-                                            val account = __accountViewModel.login(
-                                                email = emailInput,
-                                                password = passwordInput
-                                            )
+                                        if (emailInput.isBlank() || passwordInput.isBlank()){
+                                            errorMessage = "Email and password cannot be empty"
+                                        }else{
+                                            scope.launch {
+                                                val account = __accountViewModel.login(
+                                                    email = emailInput,
+                                                    password = passwordInput
+                                                )
 
-                                            if (account != null) {
-                                                errorMessage = ""
-                                                onLoginClicked() // SUCCESS
-                                            } else {
-                                                errorMessage = "Incorrect email or password"
+                                                if (account != null) {
+                                                    errorMessage = ""
+                                                    onLoginClicked()
+                                                } else {
+                                                    errorMessage = "Incorrect email or password"
+                                                }
                                             }
                                         }
                                     },
@@ -274,28 +269,33 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                             }
                         }
 
-                        Spacer(Modifier.height(20.dp))
-
-                        Button(
-                            onClick = {
-                                val intent = viewModel.getGoogleSignInIntent()
-                                googleSignInLauncher.launch(intent)
-                            },
-                            modifier = Modifier
-                                .width(260.dp)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White
-                            ),
-                            border = BorderStroke(1.dp, Color.LightGray)
-                        ) {
-                            Text(
-                                text = "Sign In with Google",
-                                color = Color.Black, // Text hitam di atas background putih
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+//                        Spacer(Modifier.height(20.dp))
+//
+//                        Button(
+//                            onClick = {
+//                                viewModel.signInWithGoogle(context) { success, msg ->
+//                                    if (success) {
+//                                        onLoginClicked()
+//                                    } else {
+//                                        errorMessage = msg ?: "Sign in failed"
+//                                    }
+//                                }
+//                            },
+//                            modifier = Modifier
+//                                .width(260.dp)
+//                                .height(48.dp),
+//                            shape = RoundedCornerShape(12.dp),
+//                            colors = ButtonDefaults.buttonColors(
+//                                containerColor = Color.White
+//                            ),
+//                            border = BorderStroke(1.dp, Color.LightGray)
+//                        ) {
+//                            Text(
+//                                text = "Sign In with Google",
+//                                color = Color.Black,
+//                                fontWeight = FontWeight.SemiBold
+//                            )
+//                        }
 
                         Spacer(Modifier.height(20.dp))
 

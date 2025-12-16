@@ -1,11 +1,7 @@
 package com.example.myfintech.ui.auth
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import com.example.myfintech.data.local.dao.*
 import com.example.myfintech.data.local.database.*
-import com.example.myfintech.data.local.entities.*
 import com.example.myfintech.viewmodel.*
 import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.data.auth.GoogleAuthClient
@@ -30,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
@@ -70,18 +65,6 @@ fun Register(
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
         val __accountViewModel = remember { AccountViewModel(__accountDao,sessionManager,googleAuth = GoogleAuthClient(context)) }
-
-        val googleSignInLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
-                viewModel.handleGoogleLogin(result.data!!) { success ->
-                    if (success) {
-                        onGoogleSignUpSuccess()
-                    }
-                }
-            }
-        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             // BACKGROUND GRADIENT LIGHT
@@ -285,10 +268,10 @@ fun Register(
                                     )
                                     .clickable {
                                         // VALIDATION LOGIC
-                                        if (passwordInput != confirmPasswordInput) {
+                                        if (emailInput.isEmpty() || passwordInput.isEmpty() ) {
+                                            errorMessage = "Password or Email cannot be empty"
+                                        } else if (passwordInput != confirmPasswordInput) {
                                             errorMessage = "Confirm password is not the same"
-                                        } else if (passwordInput.isEmpty()) {
-                                            errorMessage = "Password cannot be empty"
                                         } else {
                                             errorMessage = ""
 
@@ -316,28 +299,33 @@ fun Register(
                             }
                         }
 
-                        Spacer(Modifier.height(20.dp))
-
-                        Button(
-                            onClick = {
-                                val intent =
-                                googleSignInLauncher.launch(intent)
-                            },
-                            modifier = Modifier
-                                .width(260.dp)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White
-                            ),
-                            border = BorderStroke(1.dp, Color.LightGray)
-                        ) {
-                            Text(
-                                text = "Sign In with Google",
-                                color = Color.Black, // Text hitam di atas background putih
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+//                        Spacer(Modifier.height(20.dp))
+//
+//                        Button(
+//                            onClick = {
+//                                viewModel.signInWithGoogle(context) { success, msg ->
+//                                    if (success) {
+//                                        onLoginClicked()
+//                                    } else {
+//                                        errorMessage = msg ?: "Sign in failed"
+//                                    }
+//                                }
+//                            },
+//                            modifier = Modifier
+//                                .width(260.dp)
+//                                .height(48.dp),
+//                            shape = RoundedCornerShape(12.dp),
+//                            colors = ButtonDefaults.buttonColors(
+//                                containerColor = Color.White
+//                            ),
+//                            border = BorderStroke(1.dp, Color.LightGray)
+//                        ) {
+//                            Text(
+//                                text = "Sign In with Google",
+//                                color = Color.Black, // Text hitam di atas background putih
+//                                fontWeight = FontWeight.SemiBold
+//                            )
+//                        }
 
                         Spacer(Modifier.height(20.dp))
 
@@ -363,21 +351,3 @@ fun Register(
         }
     }
 }
-
-//@Preview(showBackground = true, widthDp = 385, heightDp = 852)
-//@Composable
-//private fun RegisterPreview1() {
-//    Register(
-//        onRegisterClicked = {},
-//        onLoginClicked = {}
-//    )
-//}
-//
-//@Preview(showBackground = true, widthDp = 385, heightDp = 852)
-//@Composable
-//private fun RegisterPreview() {
-//    Register(
-//        onRegisterClicked = {},
-//        onLoginClicked = {}
-//    )
-//}

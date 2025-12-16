@@ -1,18 +1,10 @@
 package com.example.myfintech.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+
 import com.example.myfintech.data.local.dao.*
 import com.example.myfintech.data.local.database.*
 import com.example.myfintech.data.local.pref.SessionManager
-
-import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myfintech.data.local.entities.*
@@ -20,10 +12,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import com.example.myfintech.data.auth.GoogleAuthClient
 import com.example.myfintech.data.local.dao.AccountDao
 import com.example.myfintech.data.local.entities.Account
+import android.content.Context
 
 class AccountViewModel(private val dao: AccountDao, private val session: SessionManager,private val googleAuth: GoogleAuthClient ) : ViewModel() {
 
@@ -47,44 +39,40 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         }
     }
 
-    fun handleGoogleLogin(intent: android.content.Intent, onResult: (Boolean) -> Unit) {
+    fun signInWithGoogle(context: android.content.Context,onResult: (Boolean, String?) -> Unit){
         viewModelScope.launch {
-            val success = googleAuth.signInWithIntent(intent)
-            if (success) {
+            val (success, errorMessage) = googleAuth.signIn(context)
+
+            if (success){
                 val firebaseUser = googleAuth.getCurrentUser()
                 firebaseUser?.let { user ->
                     val email = user.email ?: ""
                     val name = user.displayName ?: "Google User"
 
-                    // CRITICAL: Sinkronisasi dengan Room Database
+                    // Logika database tetap sama (Simpan ke Room)
                     val existingAccount = dao.getAccountByEmail(email)
-
                     if (existingAccount == null) {
-                        // Register otomatis di lokal agar Foreign Key Transaksi aman
                         val newAccount = Account(
                             fullname = name,
                             email = email,
-                            password = "" // Kosongkan password untuk user Google
+                            password = ""
                         )
                         dao.register(newAccount)
                     }
 
-                    // Simpan sesi seperti login manual
                     session.saveUserSession(email, name)
-                    loadUserData() // Refresh data di UI
-                    onResult(true)
-                } ?: onResult(false)
-            } else {
-                onResult(false)
+                    loadUserData()
+                    onResult(true, null)
+                } ?: onResult(false, "Firebase user is null")
+            }else{
+                onResult(false, errorMessage)
             }
         }
     }
 
-    fun getGoogleSignInIntent() = googleAuth.getSignInIntent()
-
     fun logout(onResult: () -> Unit) {
         viewModelScope.launch {
-            googleAuth.signOut() // Logout Firebase & Google
+            googleAuth.signOut()
             session.clearSession()
             onResult()
         }
@@ -92,14 +80,12 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
     fun register(fullname: String, email: String, password: String, onResult: (Boolean, String) -> Unit = {_,_->}) {
         viewModelScope.launch {
 
-            // check if user exists
             val existing = dao.getAccountByEmail(email)
             if (existing != null) {
                 onResult(false, "Email already registered")
                 return@launch
             }
 
-            // insert user
             val account = Account(
                 fullname = fullname,
                 email = email,
