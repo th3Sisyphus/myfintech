@@ -70,6 +70,10 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Gunakan BOM agar aman
 
+    // OCR
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-common:19.0.0")
+
     // Room & DataStore
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

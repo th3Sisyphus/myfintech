@@ -1,13 +1,19 @@
 package com.example.myfintech.ui.transaction.add
 
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,9 +29,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.myfintech.data.local.database.DatabaseProvider
 import com.example.myfintech.data.local.pref.SessionManager
-import com.example.myfintech.viewmodel.AccountViewModel
 import com.example.myfintech.viewmodel.TransactionViewModel
 import com.example.myfintech.ui.theme.buttonGradient
+
+// ML Kit Imports
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,16 +52,56 @@ fun AddTransactionDialog(
     val categoryOptions = listOf("Food", "Transport", "Shopping", "Health", "Salary", "Others")
     var expanded by remember { mutableStateOf(false) }
 
+    // Colors
     val inputGray = Color(0xFFF3F4F6)
     val textGray = Color(0xFF6B7280)
-
+    val themeColor = Color(0xFF2B7FFF) // Warna utama aplikasi
 
     val context = LocalContext.current
     val sessionManager = SessionManager(context)
     val email by sessionManager.getEmail().collectAsState(initial = "")
+
+    // Database Setup
     val __db = remember { DatabaseProvider.getDatabase(context) }
     val __transactionDao = remember { __db.transactionDao() }
     val __transactionViewModel = remember { TransactionViewModel(__transactionDao) }
+
+    // --- OCR LOGIC START ---
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { fileUri ->
+            try {
+                val image = InputImage.fromFilePath(context, fileUri)
+                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+                recognizer.process(image)
+                    .addOnSuccessListener { visionText ->
+                        // Regex untuk mencari angka terbesar (Total Harga)
+                        val numberRegex = Regex("""[\d,]+""")
+
+                        val largestNum = numberRegex.findAll(visionText.text)
+                            .map { it.value.replace(",", "") } // Hapus koma ribuan
+                            .mapNotNull { it.toIntOrNull() }   // Ubah ke Int
+                            .maxOrNull()                       // Ambil angka terbesar
+
+                        if (largestNum != null) {
+                            amount = largestNum.toString()
+                            Toast.makeText(context, "Detected amount: $amount", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "No amount detected", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(context, "Failed to scan text", Toast.LENGTH_SHORT).show()
+                        Log.e("OCR", "Error: ${e.message}")
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    // --- OCR LOGIC END ---
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -92,7 +142,7 @@ fun AddTransactionDialog(
                         .fillMaxWidth()
                         .height(44.dp)
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color(0xFFE5E7EB)) // Lighter gray container
+                        .background(Color(0xFFE5E7EB))
                         .padding(4.dp)
                 ) {
                     // Expense Tab
@@ -145,7 +195,6 @@ fun AddTransactionDialog(
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = inputGray,
                         unfocusedContainerColor = inputGray,
-                        disabledContainerColor = inputGray,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
                     ),
@@ -153,7 +202,33 @@ fun AddTransactionDialog(
                     singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // --- Scan Receipt Button (DIPERBAIKI) ---
+                // Ditaruh tepat di bawah input amount agar rapi
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End // Rata kanan
+                ) {
+                    TextButton(
+                        onClick = { launcher.launch("image/*") }, // Hanya menerima gambar
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Scan",
+                            tint = themeColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Scan Receipt (OCR)",
+                            color = themeColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // --- Title Input ---
                 Text("Title", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
@@ -178,14 +253,11 @@ fun AddTransactionDialog(
 
                 // --- Category Dropdown ---
                 Text("Category", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
-
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
-                    // The text field area you click
                     TextField(
                         value = category,
                         onValueChange = {},
@@ -195,20 +267,17 @@ fun AddTransactionDialog(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
                         modifier = Modifier
-                            .menuAnchor()    // REQUIRED
+                            .menuAnchor()
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(inputGray),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = inputGray,
                             unfocusedContainerColor = inputGray,
-                            disabledContainerColor = inputGray,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         )
                     )
-
-                    // The dropdown menu itself
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
@@ -224,7 +293,6 @@ fun AddTransactionDialog(
                         }
                     }
                 }
-
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -246,30 +314,32 @@ fun AddTransactionDialog(
                         Text("Cancel")
                     }
 
-                    // Add Transaction Button (Gradient)
+                    // Add Transaction Button
                     Button(
-//                        onClick = onAddTransaction,
                         onClick = {
-                            __transactionViewModel.insertTransaction(
-                                email = email ?: "",
-                                type = if (isExpense) "expense" else "income",
-                                amount = amount.toFloat(),
-                                title = title,
-                                category = category
-                            )
-                            onAddTransaction()
+                            // Perbaikan validasi amount (menggunakan toFloatOrNull) agar tidak crash
+                            if (amount.isNotEmpty()) {
+                                __transactionViewModel.insertTransaction(
+                                    email = email ?: "",
+                                    type = if (isExpense) "expense" else "income",
+                                    amount = amount.toFloatOrNull() ?: 0f,
+                                    title = title,
+                                    category = category.ifEmpty { "Others" }
+                                )
+                                onAddTransaction()
+                            }
                         },
                         modifier = Modifier
                             .weight(1.5f)
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues() // Remove default padding for gradient
+                        contentPadding = PaddingValues()
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(buttonGradient), // Using your gradient from Color.kt
+                                .background(buttonGradient),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("Add Transaction", color = Color.White)
