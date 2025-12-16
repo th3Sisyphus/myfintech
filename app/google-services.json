@@ -1,70 +1,33 @@
 {
   "project_info": {
-    "project_number": "3158431906",
-    "project_id": "myfintechapp-44446",
-    "storage_bucket": "myfintechapp-44446.firebasestorage.app"
+    "project_number": "731432835676",
+    "project_id": "myfintechapp-312d1",
+    "storage_bucket": "myfintechapp-312d1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:3158431906:android:e891a23bdf77ff311edffb",
+        "mobilesdk_app_id": "1:731432835676:android:82cee415b87d268797e499",
         "android_client_info": {
           "package_name": "com.example.myfintech"
         }
       },
       "oauth_client": [
         {
-          "client_id": "3158431906-gpom3dfgn5bs6kpo988peu53h19rf41s.apps.googleusercontent.com",
+          "client_id": "731432835676-65n9htvk5q934fip7tgm0g6mhs965egt.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCXjIUOVYpicxtjPHRIu6zl3QyWX-AAERE"
+          "current_key": "AIzaSyCoUQ0PZsJBWJG6K5QpFvYWQEBxcDNrlN0"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "3158431906-gpom3dfgn5bs6kpo988peu53h19rf41s.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:3158431906:android:80aae476b2b04e611edffb",
-        "android_client_info": {
-          "package_name": "com.myfintech.myfintech"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "3158431906-1jemknud9be3toi7n1or1f4c383pbp20.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.myfintech.myfintech",
-            "certificate_hash": "b7765dbbf55ec49d1fbbe5322b5989f6bdf5b75b"
-          }
-        },
-        {
-          "client_id": "3158431906-gpom3dfgn5bs6kpo988peu53h19rf41s.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCXjIUOVYpicxtjPHRIu6zl3QyWX-AAERE"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "3158431906-gpom3dfgn5bs6kpo988peu53h19rf41s.apps.googleusercontent.com",
+              "client_id": "731432835676-65n9htvk5q934fip7tgm0g6mhs965egt.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -1,16 +1,16 @@
 package com.example.myfintech.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.example.myfintech.data.local.dao.*
-import com.example.myfintech.data.local.database.*
+//import androidx.compose.runtime.getValue
+//import androidx.compose.runtime.mutableStateOf
+//import androidx.compose.runtime.remember
+//import androidx.compose.runtime.setValue
+//import com.example.myfintech.data.local.dao.*
+//import com.example.myfintech.data.local.database.*
 import com.example.myfintech.data.local.pref.SessionManager
 
-import com.google.firebase.auth.AuthCredential
+//import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
+//import com.google.firebase.auth.GoogleAuthProvider
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -47,9 +47,9 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         }
     }
 
-    fun handleGoogleLogin(intent: android.content.Intent, onResult: (Boolean) -> Unit) {
+    fun handleGoogleLogin(intent: android.content.Intent, onResult: (Boolean,String?) -> Unit) {
         viewModelScope.launch {
-            val success = googleAuth.signInWithIntent(intent)
+            val (success,errorMessage) = googleAuth.signInWithIntent(intent)
             if (success) {
                 val firebaseUser = googleAuth.getCurrentUser()
                 firebaseUser?.let { user ->
@@ -72,10 +72,10 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
                     // Simpan sesi seperti login manual
                     session.saveUserSession(email, name)
                     loadUserData() // Refresh data di UI
-                    onResult(true)
-                } ?: onResult(false)
+                    onResult(true,null)
+                } ?: onResult(false,"Firebase user is null")
             } else {
-                onResult(false)
+                onResult(false,errorMessage)
             }
         }
     }
