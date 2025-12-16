@@ -8,12 +8,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.tasks.await
-import android.util.Log // Tambahkan ini
 
 
 class GoogleAuthClient(private val context: Context){
     private val auth  = Firebase.auth
-    private val TAG = "GoogleAuthClient"
 
     fun getSignInIntent(): Intent{
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken("731432835676-65n9htvk5q934fip7tgm0g6mhs965egt.apps.googleusercontent.com").requestEmail().build()
@@ -22,7 +20,7 @@ class GoogleAuthClient(private val context: Context){
         return googleSignInClient.signInIntent
     }
 
-    suspend fun signInWithIntent(intent: Intent): Pair<Boolean, String?> {
+    suspend fun signInWithIntent(intent: Intent): Boolean {
         return try {
             val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
             val account = task.await()
@@ -31,16 +29,13 @@ class GoogleAuthClient(private val context: Context){
             if (googleToken != null) {
                 val firebaseCredential = GoogleAuthProvider.getCredential(googleToken, null)
                 auth.signInWithCredential(firebaseCredential).await()
-                Log.d(TAG, "Firebase sign in successful")
-                Pair(true, null)
+                true
             } else {
-                Log.e(TAG, "Google Token is null")
-                Pair(false, "Google Token is null")
+                false
             }
         } catch (e: Exception) {
-                Log.e(TAG, "SignIn Failed", e)
-    //            // Kembalikan pesan error agar bisa ditampilkan di UI
-                Pair(false, e.message ?: "Unknown Error")
+            e.printStackTrace()
+            false
         }
     }
 

@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    id("com.google.gms.google-services") version "4.4.4" apply false
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -68,7 +68,7 @@ dependencies {
     // For calculating window size classes for responsive UI
     implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Gunakan BOM agar aman
 
     // Room & DataStore
     implementation(libs.androidx.room.runtime)

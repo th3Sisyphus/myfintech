@@ -48,6 +48,16 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
+        // Launcher untuk menangkap hasil dari Activity Google Sign In
+        val googleSignInLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                viewModel.handleGoogleLogin(result.data!!) { success ->
+                    if (success) onLoginClicked()
+                }
+            }
+        }
         var emailInput by remember { mutableStateOf("") }
 
         var passwordInput by remember { mutableStateOf("") }
@@ -70,23 +80,6 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
 
         if (!email.isNullOrBlank()) {
             onLoginClicked()
-        }
-
-        // Launcher untuk menangkap hasil dari Activity Google Sign In
-        val googleSignInLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                viewModel.handleGoogleLogin(result.data!!) { success, msg ->
-                    if (success) {
-                        onLoginClicked()
-                    } else {
-                        errorMessage = msg ?: "Google Sign In Failed"
-                    }
-                }
-            } else {
-                errorMessage = "Sign in cancelled"
-            }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -114,6 +107,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .fillMaxSize()
+//                    .padding(top = 20.dp)
                     .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState())
                     .imePadding()

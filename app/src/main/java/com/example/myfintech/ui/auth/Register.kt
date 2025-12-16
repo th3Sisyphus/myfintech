@@ -3,7 +3,9 @@ package com.example.myfintech.ui.auth
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import com.example.myfintech.data.local.dao.*
 import com.example.myfintech.data.local.database.*
+import com.example.myfintech.data.local.entities.*
 import com.example.myfintech.viewmodel.*
 import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.data.auth.GoogleAuthClient
@@ -58,7 +60,10 @@ fun Register(
         var confirmPasswordInput by remember { mutableStateOf("") }
         var confirmPasswordVisible by remember { mutableStateOf(false) }
 
+        // ERROR MESSAGE STATE
         var errorMessage by remember { mutableStateOf("") }
+
+
         // --- DATABASE & VIEWMODEL ---
         val context = LocalContext.current
         val sessionManager = SessionManager(context)
@@ -70,11 +75,9 @@ fun Register(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
             if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
-                viewModel.handleGoogleLogin(result.data!!) { success,msg ->
+                viewModel.handleGoogleLogin(result.data!!) { success ->
                     if (success) {
                         onGoogleSignUpSuccess()
-                    }else{
-                        errorMessage = msg ?: "Sign up failed"
                     }
                 }
             }
@@ -317,7 +320,7 @@ fun Register(
 
                         Button(
                             onClick = {
-                                val intent = viewModel.getGoogleSignInIntent()
+                                val intent =
                                 googleSignInLauncher.launch(intent)
                             },
                             modifier = Modifier
@@ -330,8 +333,8 @@ fun Register(
                             border = BorderStroke(1.dp, Color.LightGray)
                         ) {
                             Text(
-                                text = "Create account with Google",
-                                color = Color.Black,
+                                text = "Sign In with Google",
+                                color = Color.Black, // Text hitam di atas background putih
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
