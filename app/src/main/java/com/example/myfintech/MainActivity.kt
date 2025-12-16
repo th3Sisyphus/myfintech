@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -26,6 +27,7 @@ import com.example.myfintech.data.auth.GoogleAuthClient
 import com.example.myfintech.data.local.database.DatabaseProvider
 import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.viewmodel.AccountViewModel
+import com.example.myfintech.ui.profile.PersonalInformationScreen
 
 import kotlinx.coroutines.delay
 
@@ -99,14 +101,25 @@ fun MainApp(accountViewModel: AccountViewModel) {
             }
             composable("profile") {
                 Profile(
+                    viewModel = accountViewModel,
+                    // Navigasi ke halaman Personal Info
+                    onPersonalInfoClicked = {
+                        navController.navigate("personal_info")
+                    },
                     onLogOutClicked = {
                         accountViewModel.logout {
                             navController.navigate("login") {
-                                popUpTo(0) { inclusive = true }
+                                popUpTo(0) { inclusive = true } // Hapus semua stack navigasi
                                 launchSingleTop = true
                             }
                         }
                     }
+                )
+            }
+            composable("personal_info") {
+                PersonalInformationScreen(
+                    viewModel = accountViewModel,
+                    onBackClicked = { navController.popBackStack() }
                 )
             }
             composable("login") {

@@ -1,7 +1,11 @@
 package com.example.myfintech.data.local.dao
 
-import com.example.myfintech.data.local.entities.*
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update // Tambahkan ini
+import com.example.myfintech.data.local.entities.Account
 
 @Dao
 interface AccountDao {
@@ -13,4 +17,7 @@ interface AccountDao {
 
     @Query("SELECT email FROM account_table")
     suspend fun getAllEmails(): List<String>
+
+    @Update
+    suspend fun updateAccount(account: Account)
 }

@@ -124,7 +124,7 @@ fun Analytic(modifier: Modifier = Modifier) {
                     ) {
                         AnalyticsInfoCard(
                             title = "Avg Income",
-                            amount = "Rp${avgIncome}",
+                            amount = "Rp${if (avgIncome == null || avgIncome.isNaN()) "0.0" else avgIncome}",
                             amountColor = Color(0xFF16A34A),
                             icon = Icons.Filled.TrendingUp,
                             iconBgColor = Color(0xFFD1FAE5),
@@ -132,7 +132,7 @@ fun Analytic(modifier: Modifier = Modifier) {
                         )
                         AnalyticsInfoCard(
                             title = "Avg Expenses",
-                            amount = "Rp${avgExpense}",
+                            amount = "Rp${if (avgExpense == null || avgExpense.isNaN()) "0.0" else avgExpense}",
                             amountColor = Color(0xFFEF4444),
                             icon = Icons.Filled.TrendingDown,
                             iconBgColor = Color(0xFFFEE2E2),

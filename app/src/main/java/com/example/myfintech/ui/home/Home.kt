@@ -101,6 +101,11 @@ private fun Header(
     val context = LocalContext.current
     val session = remember { SessionManager(context) }
     val username by session.getFullname().collectAsState(initial = "")
+    val userInitial = if (!username.isNullOrBlank()) {
+        username!!.take(1).uppercase()
+    } else {
+        "U"
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -115,7 +120,7 @@ private fun Header(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = username?:"",
+                text = username?.substringBefore(" ") ?:"",
                 color = Color(0xff0a0a0a),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
@@ -139,7 +144,7 @@ private fun Header(
                     )
             ) {
                 Text(
-                    text = "RF",
+                    text = userInitial,
                     color = Color.White,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold

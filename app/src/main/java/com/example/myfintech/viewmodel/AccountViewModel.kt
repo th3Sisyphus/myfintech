@@ -129,4 +129,42 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         else
             null
     }
+
+    fun updateProfile(newName: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val email = _currentEmail.value
+            val account = dao.getAccountByEmail(email)
+
+            if (account != null) {
+                val updatedAccount = account.copy(fullname = newName)
+                dao.updateAccount(updatedAccount)
+
+                // Update Session & UI State
+                session.saveUserSession(email, newName)
+                loadUserData()
+                onResult(true, "Profile updated successfully")
+            } else {
+                onResult(false, "User not found")
+            }
+        }
+    }
+
+    fun changePassword(oldPass: String, newPass: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val email = _currentEmail.value
+            val account = dao.getAccountByEmail(email)
+
+            if (account != null) {
+                if (account.password == oldPass) {
+                    val updatedAccount = account.copy(password = newPass)
+                    dao.updateAccount(updatedAccount)
+                    onResult(true, "Password changed successfully")
+                } else {
+                    onResult(false, "Incorrect old password")
+                }
+            } else {
+                onResult(false, "User error")
+            }
+        }
+    }
 }
