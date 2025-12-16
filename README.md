@@ -56,5 +56,3 @@ Aplikasi ini dibangun menggunakan teknologi Android modern:
     * `pref/`: Session Manager.
 * `domain/`: Use cases dan Repository.
 
----
-Dikembangkan oleh **Th3SiSyphus**
