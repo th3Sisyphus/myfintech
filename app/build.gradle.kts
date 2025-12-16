@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -49,6 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.auth)
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // --- LIBRARIES ADDED USING SIMPLE DOUBLE QUOTES ---
@@ -64,6 +67,19 @@ dependencies {
 
     // For calculating window size classes for responsive UI
     implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
+
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Gunakan BOM agar aman
+
+    // Room & DataStore
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
+
 
 
     // --- Test and Debug Dependencies ---

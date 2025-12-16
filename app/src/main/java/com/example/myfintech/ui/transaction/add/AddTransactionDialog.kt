@@ -1,4 +1,4 @@
-package com.example.myfintech.ui.components
+package com.example.myfintech.ui.transaction.add
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,12 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.myfintech.data.local.database.DatabaseProvider
+import com.example.myfintech.data.local.pref.SessionManager
+import com.example.myfintech.viewmodel.AccountViewModel
+import com.example.myfintech.viewmodel.TransactionViewModel
 import com.example.myfintech.ui.theme.buttonGradient
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,9 +37,21 @@ fun AddTransactionDialog(
     var isExpense by remember { mutableStateOf(true) }
     var amount by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
+
     var category by remember { mutableStateOf("") }
+    val categoryOptions = listOf("Food", "Transport", "Shopping", "Health", "Salary", "Others")
+    var expanded by remember { mutableStateOf(false) }
+
     val inputGray = Color(0xFFF3F4F6)
     val textGray = Color(0xFF6B7280)
+
+
+    val context = LocalContext.current
+    val sessionManager = SessionManager(context)
+    val email by sessionManager.getEmail().collectAsState(initial = "")
+    val __db = remember { DatabaseProvider.getDatabase(context) }
+    val __transactionDao = remember { __db.transactionDao() }
+    val __transactionViewModel = remember { TransactionViewModel(__transactionDao) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -159,34 +176,55 @@ fun AddTransactionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Category Dropdown (Simulated) ---
+                // --- Category Dropdown ---
                 Text("Category", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(inputGray)
-                        .clickable { /* TODO: Show dropdown logic */ }
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.CenterStart
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+
+                    // The text field area you click
+                    TextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        placeholder = { Text("Select a category", color = textGray) },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()    // REQUIRED
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(inputGray),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = inputGray,
+                            unfocusedContainerColor = inputGray,
+                            disabledContainerColor = inputGray,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+
+                    // The dropdown menu itself
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        Text(
-                            text = category.ifEmpty { "Select a category" },
-                            color = textGray
-                        )
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = textGray
-                        )
+                        categoryOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    category = option
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
+
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -210,7 +248,17 @@ fun AddTransactionDialog(
 
                     // Add Transaction Button (Gradient)
                     Button(
-                        onClick = onAddTransaction,
+//                        onClick = onAddTransaction,
+                        onClick = {
+                            __transactionViewModel.insertTransaction(
+                                email = email ?: "",
+                                type = if (isExpense) "expense" else "income",
+                                amount = amount.toFloat(),
+                                title = title,
+                                category = category
+                            )
+                            onAddTransaction()
+                        },
                         modifier = Modifier
                             .weight(1.5f)
                             .height(50.dp),

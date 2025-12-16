@@ -1,5 +1,6 @@
-package com.example.myfintech.presentation.auth
+package com.example.myfintech.ui.auth
 
+import android.app.Activity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,13 +24,55 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import com.example.myfintech.data.local.database.DatabaseProvider
+import com.example.myfintech.data.local.pref.SessionManager
+import com.example.myfintech.viewmodel.AccountViewModel
+import kotlinx.coroutines.launch
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.myfintech.data.auth.GoogleAuthClient
 
 @Composable
-fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit ) {
+fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit )  {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
     ) {
+
+        var emailInput by remember { mutableStateOf("") }
+
+        var passwordInput by remember { mutableStateOf("") }
+        var passwordVisible by remember { mutableStateOf(false) }
+
+        val scope = rememberCoroutineScope()
+
+        var errorMessage by remember { mutableStateOf("") }
+
+        // --- DATABASE & VIEWMODEL ---
+        val context = LocalContext.current
+        val sessionManager = SessionManager(context)
+        val email by sessionManager.getEmail().collectAsState(initial = "")
+        val __db = remember { DatabaseProvider.getDatabase(context) }
+        val __accountDao = remember { __db.accountDao() }
+        val __accountViewModel = remember { AccountViewModel(
+            __accountDao, sessionManager,
+            googleAuth = GoogleAuthClient(context)
+        ) }
+
+        if (!email.isNullOrBlank()) {
+            onLoginClicked()
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
 
             Box(
@@ -52,8 +95,13 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
-                modifier = Modifier.fillMaxSize().padding(top = 100.dp).padding(horizontal = 16.dp).verticalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+//                    .padding(top = 20.dp)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding()
             ) {
                 // Logo
                 Row(
@@ -135,8 +183,8 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
 
                             // Email
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = emailInput,
+                                onValueChange = {emailInput = it},
                                 label = { Text("Email address") },
                                 leadingIcon = {
                                     Icon(Icons.Default.Email, contentDescription = null)
@@ -146,21 +194,39 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // Password
+                            // PASSWORD FIELD
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
+                                value = passwordInput,
+                                onValueChange = {
+                                    passwordInput = it
+                                },
                                 label = { Text("Password") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Lock, contentDescription = null)
-                                },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
-                                    Icon(Icons.Default.Visibility, contentDescription = null)
+                                    val image = if (passwordVisible)
+                                        Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff
+
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null)
+                                    }
                                 },
+                                visualTransformation = if (passwordVisible)
+                                    VisualTransformation.None else PasswordVisualTransformation(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
+
+                            // ERROR MESSAGE
+                            if (errorMessage.isNotEmpty()) {
+                                Text(
+                                    text = errorMessage,
+                                    color = Color.Red,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
 
                             // Sign In Button
                             Box(
@@ -170,12 +236,28 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
                                         Brush.linearGradient(
-                                            listOf(
-                                                Color(0xFF2B7FFF),
-                                                Color(0xFFAD46FF)
-                                            )
+                                            listOf(Color(0xFF2B7FFF), Color(0xFFAD46FF))
                                         )
-                                    ).clickable { onLoginClicked() },
+                                    )
+                                    .clickable {
+                                        if (emailInput.isBlank() || passwordInput.isBlank()){
+                                            errorMessage = "Email and password cannot be empty"
+                                        }else{
+                                            scope.launch {
+                                                val account = __accountViewModel.login(
+                                                    email = emailInput,
+                                                    password = passwordInput
+                                                )
+
+                                                if (account != null) {
+                                                    errorMessage = ""
+                                                    onLoginClicked()
+                                                } else {
+                                                    errorMessage = "Incorrect email or password"
+                                                }
+                                            }
+                                        }
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -187,6 +269,34 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                             }
                         }
 
+//                        Spacer(Modifier.height(20.dp))
+//
+//                        Button(
+//                            onClick = {
+//                                viewModel.signInWithGoogle(context) { success, msg ->
+//                                    if (success) {
+//                                        onLoginClicked()
+//                                    } else {
+//                                        errorMessage = msg ?: "Sign in failed"
+//                                    }
+//                                }
+//                            },
+//                            modifier = Modifier
+//                                .width(260.dp)
+//                                .height(48.dp),
+//                            shape = RoundedCornerShape(12.dp),
+//                            colors = ButtonDefaults.buttonColors(
+//                                containerColor = Color.White
+//                            ),
+//                            border = BorderStroke(1.dp, Color.LightGray)
+//                        ) {
+//                            Text(
+//                                text = "Sign In with Google",
+//                                color = Color.Black,
+//                                fontWeight = FontWeight.SemiBold
+//                            )
+//                        }
+
                         Spacer(Modifier.height(20.dp))
 
                         Row(
@@ -194,7 +304,7 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Forgot password?",
+                                "New here?",
                                 color = Color(0xFF2B7FFF),
                                 fontSize = 14.sp
                             )
@@ -212,8 +322,8 @@ fun Login(modifier: Modifier = Modifier,onLoginClicked:()->Unit,onCreatedAccount
     }
 }
 
-@Preview(showBackground = true, widthDp = 385, heightDp = 852)
-@Composable
-private fun LoginPreview() {
-    Login(onLoginClicked = {}, onCreatedAccountClicked = {})
-}
+//@Preview(showBackground = true, widthDp = 385, heightDp = 852)
+//@Composable
+//private fun LoginPreview() {
+//    Login(viewModel = AccountViewModel,onLoginClicked = {}, onCreatedAccountClicked = {})
+//}
