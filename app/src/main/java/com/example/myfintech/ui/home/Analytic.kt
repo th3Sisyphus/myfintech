@@ -124,7 +124,7 @@ fun Analytic(modifier: Modifier = Modifier) {
                     ) {
                         AnalyticsInfoCard(
                             title = "Avg Income",
-                            amount = "Rp${if (avgIncome == null || avgIncome.isNaN()) "0.0" else avgIncome}",
+                            amount = "Rp${avgIncome.toRupiahFormat()}",
                             amountColor = Color(0xFF16A34A),
                             icon = Icons.Filled.TrendingUp,
                             iconBgColor = Color(0xFFD1FAE5),
@@ -132,7 +132,7 @@ fun Analytic(modifier: Modifier = Modifier) {
                         )
                         AnalyticsInfoCard(
                             title = "Avg Expenses",
-                            amount = "Rp${if (avgExpense == null || avgExpense.isNaN()) "0.0" else avgExpense}",
+                            amount = "Rp${avgExpense.toRupiahFormat()}",
                             amountColor = Color(0xFFEF4444),
                             icon = Icons.Filled.TrendingDown,
                             iconBgColor = Color(0xFFFEE2E2),
@@ -476,6 +476,10 @@ private fun LegendItem(label: String, color: Color) {
             fontSize = 14.sp
         )
     }
+}
+
+fun Float?.toRupiahFormat(): String {
+    return if (this == null || this.isNaN()) "0.0" else this.toString()
 }
 
 @Preview(showBackground = true, widthDp = 400, heightDp = 850)
