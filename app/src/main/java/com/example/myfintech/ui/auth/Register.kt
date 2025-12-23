@@ -299,33 +299,33 @@ fun Register(
                             }
                         }
 
-//                        Spacer(Modifier.height(20.dp))
-//
-//                        Button(
-//                            onClick = {
-//                                viewModel.signInWithGoogle(context) { success, msg ->
-//                                    if (success) {
-//                                        onLoginClicked()
-//                                    } else {
-//                                        errorMessage = msg ?: "Sign in failed"
-//                                    }
-//                                }
-//                            },
-//                            modifier = Modifier
-//                                .width(260.dp)
-//                                .height(48.dp),
-//                            shape = RoundedCornerShape(12.dp),
-//                            colors = ButtonDefaults.buttonColors(
-//                                containerColor = Color.White
-//                            ),
-//                            border = BorderStroke(1.dp, Color.LightGray)
-//                        ) {
-//                            Text(
-//                                text = "Sign In with Google",
-//                                color = Color.Black, // Text hitam di atas background putih
-//                                fontWeight = FontWeight.SemiBold
-//                            )
-//                        }
+                        Spacer(Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                viewModel.signInWithGoogle(context) { success, msg ->
+                                    if (success) {
+                                        onLoginClicked()
+                                    } else {
+                                        errorMessage = msg ?: "Sign in failed"
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .width(260.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White
+                            ),
+                            border = BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            Text(
+                                text = "Sign In with Google",
+                                color = Color.Black, // Text hitam di atas background putih
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
                         Spacer(Modifier.height(20.dp))
 
