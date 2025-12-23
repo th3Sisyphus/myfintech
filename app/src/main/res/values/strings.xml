@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">MyFintech</string>
-
+    <string name="default_web_client_id">401986579798-5pl5dggmfr3ffpfcd28lnbg0tst3rk0k.apps.googleusercontent.com</string>
 </resources>

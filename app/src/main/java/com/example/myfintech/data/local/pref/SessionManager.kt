@@ -44,3 +44,4 @@ class SessionManager(private val context: Context) {
         return userEmail
     }
 }
+

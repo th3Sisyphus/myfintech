@@ -16,8 +16,21 @@ import com.example.myfintech.data.auth.GoogleAuthClient
 import com.example.myfintech.data.local.dao.AccountDao
 import com.example.myfintech.data.local.entities.Account
 import android.content.Context
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.CredentialManager
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.flow.SharingStarted
 
-class AccountViewModel(private val dao: AccountDao, private val session: SessionManager,private val googleAuth: GoogleAuthClient ) : ViewModel() {
+// ...
+
+// In your AccountViewModel.kt
+class AccountViewModel(
+    private val dao: AccountDao,
+    val session: SessionManager, // <-- This is private
+    private val googleAuth: GoogleAuthClient
+) : ViewModel() {
+    // ...
 
     private val _emailState = MutableStateFlow("")
     val emailState: StateFlow<String> = _emailState.asStateFlow()
@@ -39,7 +52,9 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
         }
     }
 
-    fun signInWithGoogle(context: android.content.Context,onResult: (Boolean, String?) -> Unit){
+
+
+    fun signInWithGoogle(context: android.content.Context,isLogin: Boolean, onResult: (Boolean, String?) -> Unit){
         viewModelScope.launch {
             val (success, errorMessage) = googleAuth.signIn(context)
 
@@ -49,17 +64,25 @@ class AccountViewModel(private val dao: AccountDao, private val session: Session
                     val email = user.email ?: ""
                     val name = user.displayName ?: "Google User"
 
-                    // Logika database tetap sama (Simpan ke Room)
                     val existingAccount = dao.getAccountByEmail(email)
-                    if (existingAccount == null) {
-                        val newAccount = Account(
-                            fullname = name,
-                            email = email,
-                            password = ""
-                        )
-                        dao.register(newAccount)
+                    
+                    if (isLogin) {
+                        if (existingAccount == null) {
+                            googleAuth.signOut()
+                            onResult(false, "Account not registered. Please sign up first.")
+                            return@launch
+                        }
+                    } else { // Handle registration
+                        if (existingAccount == null) {
+                            val newAccount = Account(
+                                fullname = name,
+                                email = email,
+                                password = "" // No password for Google sign-in
+                            )
+                            dao.register(newAccount)
+                        }
                     }
-
+                    
                     session.saveUserSession(email, name)
                     loadUserData()
                     onResult(true, null)

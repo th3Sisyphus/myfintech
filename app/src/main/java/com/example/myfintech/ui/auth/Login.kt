@@ -1,6 +1,5 @@
 package com.example.myfintech.ui.auth
 
-import android.app.Activity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -33,14 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import com.example.myfintech.data.local.database.DatabaseProvider
-import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
-
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import com.example.myfintech.data.auth.GoogleAuthClient
 
 @Composable
 fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit )  {
@@ -50,30 +42,15 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
     ) {
 
         var emailInput by remember { mutableStateOf("") }
-
         var passwordInput by remember { mutableStateOf("") }
         var passwordVisible by remember { mutableStateOf(false) }
 
         val scope = rememberCoroutineScope()
+        val context = LocalContext.current
 
         var errorMessage by remember { mutableStateOf("") }
 
-        // --- DATABASE & VIEWMODEL ---
-        val context = LocalContext.current
-        val sessionManager = SessionManager(context)
-        val email by sessionManager.getEmail().collectAsState(initial = "")
-//        val __db = remember { DatabaseProvider.getDatabase(context) }
-//        val __accountDao = remember { __db.accountDao() }
-//        val __accountViewModel = remember { AccountViewModel(
-//            __accountDao, sessionManager,
-//            googleAuth = GoogleAuthClient(context)
-//        ) }
-        val __db = remember { DatabaseProvider.getDatabase(context) }
-        val __accountDao = remember { __db.accountDao() }
-        val __accountViewModel = remember { AccountViewModel(
-            __accountDao, sessionManager,
-            googleAuth = GoogleAuthClient(context)
-        ) }
+        val email by viewModel.session.getEmail().collectAsState(initial = "")
 
         if (!email.isNullOrBlank()) {
             onLoginClicked()
@@ -104,7 +81,6 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .fillMaxSize()
-//                    .padding(top = 20.dp)
                     .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState())
                     .imePadding()
@@ -250,7 +226,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                                             errorMessage = "Email and password cannot be empty"
                                         }else{
                                             scope.launch {
-                                                val account = __accountViewModel.login(
+                                                val account = viewModel.login(
                                                     email = emailInput,
                                                     password = passwordInput
                                                 )
@@ -279,7 +255,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
 
                         Button(
                             onClick = {
-                                viewModel.signInWithGoogle(context) { success, msg ->
+                                viewModel.signInWithGoogle(context, isLogin = true) { success, msg ->
                                     if (success) {
                                         onLoginClicked()
                                     } else {
@@ -327,9 +303,3 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         }
     }
 }
-
-//@Preview(showBackground = true, widthDp = 385, heightDp = 852)
-//@Composable
-//private fun LoginPreview() {
-//    Login(viewModel = AccountViewModel,onLoginClicked = {}, onCreatedAccountClicked = {})
-//}

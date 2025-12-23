@@ -1,11 +1,7 @@
 package com.example.myfintech.ui.auth
 
 import androidx.compose.foundation.BorderStroke
-import com.example.myfintech.data.local.database.*
-import com.example.myfintech.viewmodel.*
-import com.example.myfintech.data.local.pref.SessionManager
-import com.example.myfintech.data.auth.GoogleAuthClient
-
+import com.example.myfintech.viewmodel.AccountViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,7 +29,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalContext
 
 
-
 @Composable
 fun Register(
     viewModel: AccountViewModel,
@@ -48,26 +43,14 @@ fun Register(
     ) {
         var fullnameInput by remember { mutableStateOf("") }
         var emailInput by remember { mutableStateOf("") }
-
         var passwordInput by remember { mutableStateOf("") }
         var passwordVisible by remember { mutableStateOf(false) }
-
         var confirmPasswordInput by remember { mutableStateOf("") }
         var confirmPasswordVisible by remember { mutableStateOf(false) }
-
-        // ERROR MESSAGE STATE
         var errorMessage by remember { mutableStateOf("") }
-
-
-        // --- DATABASE & VIEWMODEL ---
         val context = LocalContext.current
-        val sessionManager = SessionManager(context)
-        val __db = remember { DatabaseProvider.getDatabase(context) }
-        val __accountDao = remember { __db.accountDao() }
-        val __accountViewModel = remember { AccountViewModel(__accountDao,sessionManager,googleAuth = GoogleAuthClient(context)) }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // BACKGROUND GRADIENT LIGHT
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -91,7 +74,6 @@ fun Register(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .fillMaxSize()
-//                    .padding(top = 20.dp)
                     .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState())
                     .imePadding()
@@ -133,7 +115,7 @@ fun Register(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "Welcome back! Please login to continue",
+                    text = "Create an account to get started",
                     color = Color(0xFF6B7280),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center
@@ -159,12 +141,12 @@ fun Register(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Login,
+                                imageVector = Icons.Default.PersonAdd,
                                 contentDescription = null,
                                 tint = Color(0xFF6B46C1)
                             )
                             Text(
-                                text = "Login",
+                                text = "Register",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -172,7 +154,6 @@ fun Register(
 
                         Spacer(Modifier.height(24.dp))
 
-                        // Input Fields
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
                             OutlinedTextField(
@@ -194,13 +175,12 @@ fun Register(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.width(260.dp)
                             )
-
-                            // PASSWORD FIELD
+                            
                             OutlinedTextField(
                                 value = passwordInput,
                                 onValueChange = {
                                     passwordInput = it
-                                    errorMessage = ""   // clear error when typing
+                                    errorMessage = ""
                                 },
                                 label = { Text("Password") },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
@@ -220,12 +200,11 @@ fun Register(
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // CONFIRM PASSWORD
                             OutlinedTextField(
                                 value = confirmPasswordInput,
                                 onValueChange = {
                                     confirmPasswordInput = it
-                                    errorMessage = ""  // clear error when typing
+                                    errorMessage = ""
                                 },
                                 label = { Text("Confirm password") },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
@@ -245,7 +224,6 @@ fun Register(
                                 modifier = Modifier.width(260.dp)
                             )
 
-                            // ERROR MESSAGE
                             if (errorMessage.isNotEmpty()) {
                                 Text(
                                     text = errorMessage,
@@ -255,7 +233,6 @@ fun Register(
                                 )
                             }
 
-                            // SIGN UP BUTTON
                             Box(
                                 modifier = Modifier
                                     .width(260.dp)
@@ -267,21 +244,19 @@ fun Register(
                                         )
                                     )
                                     .clickable {
-                                        // VALIDATION LOGIC
                                         if (emailInput.isEmpty() || passwordInput.isEmpty() ) {
                                             errorMessage = "Password or Email cannot be empty"
                                         } else if (passwordInput != confirmPasswordInput) {
                                             errorMessage = "Confirm password is not the same"
                                         } else {
                                             errorMessage = ""
-
-                                            __accountViewModel.register(
+                                            viewModel.register(
                                                 fullnameInput,
                                                 emailInput,
                                                 passwordInput
                                             ) { success, msg ->
                                                 if (!success) {
-                                                    errorMessage = msg
+                                                    errorMessage = msg ?: "Registration failed"
                                                 } else {
                                                     onRegisterClicked()
                                                 }
@@ -303,11 +278,11 @@ fun Register(
 
                         Button(
                             onClick = {
-                                viewModel.signInWithGoogle(context) { success, msg ->
+                                viewModel.signInWithGoogle(context, isLogin = false) { success, msg ->
                                     if (success) {
-                                        onLoginClicked()
+                                        onGoogleSignUpSuccess()
                                     } else {
-                                        errorMessage = msg ?: "Sign in failed"
+                                        errorMessage = msg ?: "Sign up failed"
                                     }
                                 }
                             },
@@ -321,8 +296,8 @@ fun Register(
                             border = BorderStroke(1.dp, Color.LightGray)
                         ) {
                             Text(
-                                text = "Sign In with Google",
-                                color = Color.Black, // Text hitam di atas background putih
+                                text = "Sign Up with Google",
+                                color = Color.Black,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
