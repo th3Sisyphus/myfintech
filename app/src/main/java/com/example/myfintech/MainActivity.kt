@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
         val database = DatabaseProvider.getDatabase(applicationContext)
         val sessionManager = SessionManager(applicationContext)
-        val googleAuthClient = GoogleAuthClient(applicationContext)
+        val googleAuthClient = GoogleAuthClient(this)
 
         val accountViewModel = AccountViewModel(
             dao = database.accountDao(),
