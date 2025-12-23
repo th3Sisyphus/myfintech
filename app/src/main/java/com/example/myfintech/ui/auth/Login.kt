@@ -62,18 +62,13 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         val context = LocalContext.current
         val sessionManager = SessionManager(context)
         val email by sessionManager.getEmail().collectAsState(initial = "")
-//        val __db = remember { DatabaseProvider.getDatabase(context) }
-//        val __accountDao = remember { __db.accountDao() }
-//        val __accountViewModel = remember { AccountViewModel(
-//            __accountDao, sessionManager,
-//            googleAuth = GoogleAuthClient(context)
-//        ) }
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
         val __accountViewModel = remember { AccountViewModel(
             __accountDao, sessionManager,
             googleAuth = GoogleAuthClient(context)
         ) }
+
 
         if (!email.isNullOrBlank()) {
             onLoginClicked()
