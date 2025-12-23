@@ -278,11 +278,11 @@ fun Register(
 
                         Button(
                             onClick = {
-                                viewModel.signInWithGoogle(context) { success, msg ->
+                                viewModel.signInWithGoogle(context, isLogin = false) { success, msg ->
                                     if (success) {
                                         onGoogleSignUpSuccess()
                                     } else {
-                                        errorMessage = msg ?: "Sign in failed"
+                                        errorMessage = msg ?: "Sign up failed"
                                     }
                                 }
                             },
@@ -296,7 +296,7 @@ fun Register(
                             border = BorderStroke(1.dp, Color.LightGray)
                         ) {
                             Text(
-                                text = "Sign In with Google",
+                                text = "Sign Up with Google",
                                 color = Color.Black,
                                 fontWeight = FontWeight.SemiBold
                             )

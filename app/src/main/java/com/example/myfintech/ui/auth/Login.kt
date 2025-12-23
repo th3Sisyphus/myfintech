@@ -255,7 +255,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
 
                         Button(
                             onClick = {
-                                viewModel.signInWithGoogle(context) { success, msg ->
+                                viewModel.signInWithGoogle(context, isLogin = true) { success, msg ->
                                     if (success) {
                                         onLoginClicked()
                                     } else {
