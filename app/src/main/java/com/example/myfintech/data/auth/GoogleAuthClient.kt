@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.example.myfintech.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -21,9 +22,12 @@ class GoogleAuthClient(private val context: Context){
 
 
     // Fungsi login baru menggunakan Credential Manager
+    // In GoogleAuthClient.kt
+
     suspend fun signIn(activityContext: Context): Pair<Boolean, String?> {
         try {
-            val webClientId = context.getString(R.string.default_web_client_id)
+            // Use the passed-in activity context to get the string
+            val webClientId = activityContext.getString(R.string.default_web_client_id)
 
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
@@ -35,9 +39,10 @@ class GoogleAuthClient(private val context: Context){
                 .addCredentialOption(googleIdOption)
                 .build()
 
+            // Use the passed-in activity context here as well
             val result = credentialManager.getCredential(
                 request = request,
-                context = context
+                context = activityContext // <-- Use activityContext here
             )
 
             val credential = result.credential
@@ -56,12 +61,17 @@ class GoogleAuthClient(private val context: Context){
 
         } catch (e: GetCredentialException) {
             Log.e(TAG, "Credential Manager Error", e)
+            // Provide a more user-friendly message for a common cancellation scenario
+            if (e is androidx.credentials.exceptions.NoCredentialException) {
+                return Pair(false, "User cancelled the sign-in process.")
+            }
             return Pair(false, e.message)
         } catch (e: Exception) {
             Log.e(TAG, "Unknown Sign In Error", e)
             return Pair(false, e.message)
         }
     }
+
 
     fun getCurrentUser() = auth.currentUser
 

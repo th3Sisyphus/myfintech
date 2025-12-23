@@ -62,6 +62,12 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         val context = LocalContext.current
         val sessionManager = SessionManager(context)
         val email by sessionManager.getEmail().collectAsState(initial = "")
+//        val __db = remember { DatabaseProvider.getDatabase(context) }
+//        val __accountDao = remember { __db.accountDao() }
+//        val __accountViewModel = remember { AccountViewModel(
+//            __accountDao, sessionManager,
+//            googleAuth = GoogleAuthClient(context)
+//        ) }
         val __db = remember { DatabaseProvider.getDatabase(context) }
         val __accountDao = remember { __db.accountDao() }
         val __accountViewModel = remember { AccountViewModel(
@@ -269,33 +275,33 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                             }
                         }
 
-//                        Spacer(Modifier.height(20.dp))
-//
-//                        Button(
-//                            onClick = {
-//                                viewModel.signInWithGoogle(context) { success, msg ->
-//                                    if (success) {
-//                                        onLoginClicked()
-//                                    } else {
-//                                        errorMessage = msg ?: "Sign in failed"
-//                                    }
-//                                }
-//                            },
-//                            modifier = Modifier
-//                                .width(260.dp)
-//                                .height(48.dp),
-//                            shape = RoundedCornerShape(12.dp),
-//                            colors = ButtonDefaults.buttonColors(
-//                                containerColor = Color.White
-//                            ),
-//                            border = BorderStroke(1.dp, Color.LightGray)
-//                        ) {
-//                            Text(
-//                                text = "Sign In with Google",
-//                                color = Color.Black,
-//                                fontWeight = FontWeight.SemiBold
-//                            )
-//                        }
+                        Spacer(Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                viewModel.signInWithGoogle(context) { success, msg ->
+                                    if (success) {
+                                        onLoginClicked()
+                                    } else {
+                                        errorMessage = msg ?: "Sign in failed"
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .width(260.dp)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White
+                            ),
+                            border = BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            Text(
+                                text = "Sign In with Google",
+                                color = Color.Black,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
                         Spacer(Modifier.height(20.dp))
 
