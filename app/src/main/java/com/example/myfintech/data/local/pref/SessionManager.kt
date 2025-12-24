@@ -1,13 +1,18 @@
 package com.example.myfintech.data.local.pref
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-val Context.dataStore by preferencesDataStore("user_session")
+import java.io.IOException
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore("user_session")
 
 class SessionManager(private val context: Context) {
     companion object {
@@ -15,7 +20,6 @@ class SessionManager(private val context: Context) {
         val FULLNAME = stringPreferencesKey("fullname")
     }
 
-    // Save session
     suspend fun saveUserSession(email: String, fullname: String) {
         context.dataStore.edit { prefs ->
             prefs[EMAIL] = email
@@ -23,25 +27,22 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    // Read session
-    private val userEmail: Flow<String?> = context.dataStore.data
-        .map { prefs -> prefs[EMAIL] }
+    private val userFlow: Flow<Preferences> = context.dataStore.data
+        .catch { 
+            // On any exception during datastore read, treat as a logout.
+            // This makes the app resilient to file corruption.
+            emit(emptyPreferences())
+        }
 
-    private val fullname: Flow<String?> = context.dataStore.data
-        .map { prefs -> prefs[FULLNAME] }
-
-    // Delete session (logout)
-    suspend fun clearSession() {
-        context.dataStore.edit { it.clear() }
+    fun getEmail(): Flow<String?> {
+        return userFlow.map { prefs -> prefs[EMAIL] }
     }
 
     fun getFullname(): Flow<String?> {
-        return fullname
+        return userFlow.map { prefs -> prefs[FULLNAME] }
     }
 
-    // Mengembalikan Flow email
-    fun getEmail(): Flow<String?> {
-        return userEmail
+    suspend fun clearSession() {
+        context.dataStore.edit { it.clear() }
     }
 }
-

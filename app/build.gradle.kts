@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.biometric:biometric:1.1.0")
 //    implementation(libs.play.services.auth)
     implementation("androidx.navigation:navigation-compose:2.7.7")
 

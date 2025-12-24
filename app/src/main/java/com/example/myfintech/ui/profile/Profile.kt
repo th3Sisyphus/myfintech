@@ -39,11 +39,6 @@ fun Profile(
     // State untuk Dialog Password
     var showSecurityDialog by remember { mutableStateOf(false) }
 
-    // Load data terbaru saat halaman dibuka
-    LaunchedEffect(Unit) {
-        viewModel.loadUserData()
-    }
-
     Surface(
         modifier = modifier.fillMaxSize(),
         color = Color(0xfff9fafb)
