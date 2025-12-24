@@ -31,11 +31,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.fragment.app.FragmentActivity
 import com.example.myfintech.viewmodel.AccountViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClicked:()->Unit,onCreatedAccountClicked:()->Unit )  {
+fun Login(
+    activity: FragmentActivity,
+    modifier: Modifier = Modifier,
+    viewModel: AccountViewModel,
+    onLoginClicked: () -> Unit,
+    onCreatedAccountClicked: () -> Unit
+) {
     Surface(
         color = Color(0xFFF9FAFB),
         modifier = modifier.fillMaxSize()
@@ -49,12 +56,6 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
         val context = LocalContext.current
 
         var errorMessage by remember { mutableStateOf("") }
-
-        val email by viewModel.session.getEmail().collectAsState(initial = "")
-
-        if (!email.isNullOrBlank()) {
-            onLoginClicked()
-        }
 
         Box(modifier = Modifier.fillMaxSize()) {
 
@@ -166,7 +167,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                             // Email
                             OutlinedTextField(
                                 value = emailInput,
-                                onValueChange = {emailInput = it},
+                                onValueChange = { emailInput = it },
                                 label = { Text("Email address") },
                                 leadingIcon = {
                                     Icon(Icons.Default.Email, contentDescription = null)
@@ -222,9 +223,9 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                                         )
                                     )
                                     .clickable {
-                                        if (emailInput.isBlank() || passwordInput.isBlank()){
+                                        if (emailInput.isBlank() || passwordInput.isBlank()) {
                                             errorMessage = "Email and password cannot be empty"
-                                        }else{
+                                        } else {
                                             scope.launch {
                                                 val account = viewModel.login(
                                                     email = emailInput,
@@ -249,6 +250,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
+
                         }
 
                         Spacer(Modifier.height(20.dp))
@@ -294,7 +296,7 @@ fun Login(modifier: Modifier = Modifier,viewModel: AccountViewModel,onLoginClick
                                 "Create account",
                                 color = Color(0xFFAD46FF),
                                 fontSize = 14.sp,
-                                modifier = Modifier.clickable {onCreatedAccountClicked()}
+                                modifier = Modifier.clickable { onCreatedAccountClicked() }
                             )
                         }
                     }

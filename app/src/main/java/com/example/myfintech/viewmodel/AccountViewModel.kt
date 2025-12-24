@@ -1,48 +1,51 @@
 package com.example.myfintech.viewmodel
 
-
-import com.example.myfintech.data.local.dao.*
-import com.example.myfintech.data.local.database.*
-import com.example.myfintech.data.local.pref.SessionManager
-import com.google.firebase.auth.FirebaseAuth
+import android.content.Context
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myfintech.data.local.entities.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import com.example.myfintech.data.auth.BiometricAuthenticator
 import com.example.myfintech.data.auth.GoogleAuthClient
 import com.example.myfintech.data.local.dao.AccountDao
 import com.example.myfintech.data.local.entities.Account
-import android.content.Context
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.CredentialManager
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.example.myfintech.data.local.pref.SessionManager
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-// ...
 
-// In your AccountViewModel.kt
 class AccountViewModel(
     private val dao: AccountDao,
-    val session: SessionManager, // <-- This is private
-    private val googleAuth: GoogleAuthClient
+    val session: SessionManager,
+    private val googleAuth: GoogleAuthClient,
+    private val biometricAuth: BiometricAuthenticator
 ) : ViewModel() {
-    // ...
 
-    private val _emailState = MutableStateFlow("")
-    val emailState: StateFlow<String> = _emailState.asStateFlow()
-
+    // This is unused, but we'll leave it in case you need it later.
     private val _emails = MutableStateFlow<List<String>>(emptyList())
     val emails: StateFlow<List<String>> = _emails.asStateFlow()
 
-    private val _currentName = MutableStateFlow("User")
-    val currentName: StateFlow<String> = _currentName.asStateFlow()
+    val currentName: StateFlow<String> = session.getFullname()
+        .map { it ?: "User" }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "User"
+        )
 
-    private val _currentEmail = MutableStateFlow("")
-    val currentEmail: StateFlow<String> = _currentEmail.asStateFlow()
+    val currentEmail: StateFlow<String> = session.getEmail()
+        .map { it ?: "" }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -52,20 +55,37 @@ class AccountViewModel(
         }
     }
 
+    fun isBiometricAvailable(): Boolean = biometricAuth.isBiometricAvailable()
 
+    fun loginWithBiometric(activity: FragmentActivity, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val email = session.getEmail().first()
+            if (email.isNullOrBlank()) {
+                onResult(false, "No last logged in user found.")
+                return@launch
+            }
 
-    fun signInWithGoogle(context: android.content.Context,isLogin: Boolean, onResult: (Boolean, String?) -> Unit){
+            biometricAuth.authenticate(activity, onSuccess = {
+                // On success, we just notify the UI. The stateIn operator will handle data loading.
+                onResult(true, null)
+            }, onError = {
+                onResult(false, it)
+            })
+        }
+    }
+
+    fun signInWithGoogle(context: Context, isLogin: Boolean, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             val (success, errorMessage) = googleAuth.signIn(context)
 
-            if (success){
+            if (success) {
                 val firebaseUser = googleAuth.getCurrentUser()
                 firebaseUser?.let { user ->
                     val email = user.email ?: ""
                     val name = user.displayName ?: "Google User"
 
                     val existingAccount = dao.getAccountByEmail(email)
-                    
+
                     if (isLogin) {
                         if (existingAccount == null) {
                             googleAuth.signOut()
@@ -82,12 +102,11 @@ class AccountViewModel(
                             dao.register(newAccount)
                         }
                     }
-                    
+
                     session.saveUserSession(email, name)
-                    loadUserData()
                     onResult(true, null)
                 } ?: onResult(false, "Firebase user is null")
-            }else{
+            } else {
                 onResult(false, errorMessage)
             }
         }
@@ -100,9 +119,9 @@ class AccountViewModel(
             onResult()
         }
     }
-    fun register(fullname: String, email: String, password: String, onResult: (Boolean, String) -> Unit = {_,_->}) {
-        viewModelScope.launch {
 
+    fun register(fullname: String, email: String, password: String, onResult: (Boolean, String) -> Unit = { _, _ -> }) {
+        viewModelScope.launch {
             val existing = dao.getAccountByEmail(email)
             if (existing != null) {
                 onResult(false, "Email already registered")
@@ -120,51 +139,32 @@ class AccountViewModel(
         }
     }
 
-    fun loadUserData() {
-        viewModelScope.launch {
-            // Asumsi: SessionManager punya fungsi getFullname() dan getEmail()
-            // Jika menggunakan DataStore (Flow), gunakan .collect
-            // Jika SharedPreferences (Sync), langsung ambil value
-
-            // Contoh implementasi jika SessionManager menggunakan Flow (DataStore):
-            session.getFullname().collect { name ->
-                _currentName.value = name ?: "User"
-            }
-        }
-        viewModelScope.launch {
-            session.getEmail().collect { email ->
-                _currentEmail.value = email ?: ""
-            }
-        }
-    }
-
     suspend fun login(email: String, password: String): Account? {
         val account = dao.getAccountByEmail(email)
-        return if (account != null && account.password == password){
-            // SAVE SESSION HERE
+        return if (account != null && account.password == password) {
             session.saveUserSession(
                 email = account.email,
                 fullname = account.fullname
             )
-            loadUserData()
             account
-        }
-        else
+        } else
             null
     }
 
     fun updateProfile(newName: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val email = _currentEmail.value
+            val email = currentEmail.value
+            if (email.isBlank()) {
+                onResult(false, "User not found")
+                return@launch
+            }
             val account = dao.getAccountByEmail(email)
 
             if (account != null) {
                 val updatedAccount = account.copy(fullname = newName)
                 dao.updateAccount(updatedAccount)
 
-                // Update Session & UI State
                 session.saveUserSession(email, newName)
-                loadUserData()
                 onResult(true, "Profile updated successfully")
             } else {
                 onResult(false, "User not found")
@@ -174,7 +174,11 @@ class AccountViewModel(
 
     fun changePassword(oldPass: String, newPass: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val email = _currentEmail.value
+            val email = currentEmail.value
+            if (email.isBlank()) {
+                onResult(false, "User not found")
+                return@launch
+            }
             val account = dao.getAccountByEmail(email)
 
             if (account != null) {
