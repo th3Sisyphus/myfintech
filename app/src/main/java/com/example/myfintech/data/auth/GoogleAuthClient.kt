@@ -21,13 +21,8 @@ class GoogleAuthClient(private val context: Context){
     private val credentialManager = CredentialManager.create(context)
     private val TAG = "GoogleAuthClient"
 
-
-    // Fungsi login baru menggunakan Credential Manager
-    // In GoogleAuthClient.kt
-
     suspend fun signIn(activityContext: Context): Pair<Boolean, String?> {
         try {
-            // Use the passed-in activity context to get the string
             val webClientId = activityContext.getString(R.string.default_web_client_id)
 
             val googleIdOption = GetGoogleIdOption.Builder()
@@ -40,10 +35,9 @@ class GoogleAuthClient(private val context: Context){
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            // Use the passed-in activity context here as well
             val result = credentialManager.getCredential(
                 request = request,
-                context = activityContext // <-- Use activityContext here
+                context = activityContext
             )
 
             val credential = result.credential
@@ -76,7 +70,6 @@ class GoogleAuthClient(private val context: Context){
 
         } catch (e: GetCredentialException) {
             Log.e(TAG, "Credential Manager Error", e)
-            // Provide a more user-friendly message for a common cancellation scenario
             if (e is NoCredentialException) {
                 return Pair(false, "User cancelled the sign-in process.")
             }
