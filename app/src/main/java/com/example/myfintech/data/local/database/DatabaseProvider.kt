@@ -15,7 +15,7 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "fintechDB"
-            ).build()
+            ).fallbackToDestructiveMigration().build()
 
             INSTANCE = instance
             instance

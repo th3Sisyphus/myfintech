@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,25 +21,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myfintech.data.local.database.DatabaseProvider
+import com.example.myfintech.data.local.entities.Transaction
 import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.viewmodel.TransactionViewModel
-import com.example.myfintech.data.local.entities.Transaction
 
-import kotlinx.coroutines.launch
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Transactions(modifier: Modifier = Modifier) {
 
     // --- SESSION EMAIL ---
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
+    val email by sessionManager.getEmail().collectAsState(initial = null)
 
     // --- DB + VIEWMODEL ---
     val db = remember { DatabaseProvider.getDatabase(context) }
@@ -48,18 +45,17 @@ fun Transactions(modifier: Modifier = Modifier) {
 
     // --- UI STATE ---
     var selectedFilter by remember { mutableStateOf("All") }
-    var transactions by remember { mutableStateOf(emptyList<Transaction>()) }
-
-    val scope = rememberCoroutineScope()
+    val transactions by transactionViewModel.transactions.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
 
     // --- LOAD TRANSACTIONS ---
     LaunchedEffect(email) {
-        if (!email.isNullOrEmpty()) {
-            transactions = transactionViewModel.getTransaction(email?:"")
+        email?.let { userEmail ->
+            transactionViewModel.loadTransactions(userEmail)
         }
     }
 
-    Surface(modifier = modifier.fillMaxSize(), color = Color.White) {
+    Surface(modifier = modifier.fillMaxSize(), color = Color(0xFFF3F4F6)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -86,28 +82,29 @@ fun Transactions(modifier: Modifier = Modifier) {
 
             // Search Bar
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(56.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xfff3f3f5))
-                        .border(BorderStroke(1.dp, Color(0xFFE5E7EB)))
-                        .padding(horizontal = 12.dp)
-                ) {
-                    Image(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "Search transactions...",
-                        color = Color(0xff717182),
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
+                        .background(Color.White),
+                    placeholder = { Text("Search transactions...", color = Color(0xff717182)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search Icon",
+                            tint = Color(0xff717182)
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = Color(0xff0a0a0a)
+                    ),
+                    singleLine = true
+                )
             }
 
             // Filter Buttons
@@ -135,22 +132,62 @@ fun Transactions(modifier: Modifier = Modifier) {
             }
 
             // --- FILTERED TRANSACTIONS LIST ---
-            val filtered = when (selectedFilter) {
-                "Income" -> transactions.filter { it.type == "income" }
-                "Expense" -> transactions.filter { it.type == "expense" }
-                else -> transactions
+            val filtered = transactions.filter { transaction ->
+                val matchesFilter = when (selectedFilter) {
+                    "Income" -> transaction.type == "income"
+                    "Expense" -> transaction.type == "expense"
+                    else -> true
+                }
+                val matchesSearch = if (searchQuery.isNotBlank()) {
+                    transaction.title.contains(searchQuery, ignoreCase = true) ||
+                            transaction.category.contains(searchQuery, ignoreCase = true)
+                } else {
+                    true
+                }
+                matchesFilter && matchesSearch
             }
 
-            items(filtered) { t ->
-                TransactionItem(
-                    title = t.title,
-                    category = t.category,
-                    amount = if (t.type == "expense") "-Rp${t.amount}" else "+Rp${t.amount}",
-                    date = "",// <---
-                    amountColor = if (t.type == "expense") Color(0xffe7000b) else Color(0xff00a63e),
-                    icon = if (t.type == "expense") Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                    iconBackgroundColor = if (t.type == "expense") Color(0xffffe2e2) else Color(0xffdcfce7)
+            items(filtered, key = { it.id }) { t ->
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = {
+                        if (it == SwipeToDismissBoxValue.EndToStart) {
+                            transactionViewModel.deleteTransaction(t)
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    positionalThreshold = { it * .25f } // Swipe 25% to trigger
                 )
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false, // Disable swipe from left
+                    backgroundContent = {
+                        val color = when (dismissState.targetValue) {
+                            SwipeToDismissBoxValue.EndToStart -> Color.Red.copy(alpha = 0.8f)
+                            else -> Color.Transparent
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color, shape = RoundedCornerShape(14.dp))
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                        }
+                    }
+                ) {
+                    TransactionItem(
+                        title = t.title,
+                        category = t.category,
+                        amount = if (t.type == "expense") "-Rp${t.amount}" else "+Rp${t.amount}",
+                        date = "",
+                        amountColor = if (t.type == "expense") Color(0xffe7000b) else Color(0xff00a63e),
+                        icon = if (t.type == "expense") Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                        iconBackgroundColor = if (t.type == "expense") Color(0xffffe2e2) else Color(0xffdcfce7)
+                    )
+                }
             }
         }
     }
@@ -167,7 +204,7 @@ private fun FilterButton(
         onClick = onClick,
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) Color(0xffececf0) else Color.Transparent,
+            containerColor = if (isSelected) Color.White else Color.Transparent,
             contentColor = Color(0xff0a0a0a)
         ),
         border = if (!isSelected) BorderStroke(1.dp, Color(0xFFE5E7EB)) else null,
@@ -192,7 +229,11 @@ private fun TransactionItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .border(BorderStroke(1.dp, Color.Black.copy(alpha = 0.1f)))
+            .background(Color.White)
+            .border(
+                BorderStroke(1.dp, Color.Black.copy(alpha = 0.1f)),
+                RoundedCornerShape(14.dp)
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

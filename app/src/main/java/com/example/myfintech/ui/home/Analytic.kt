@@ -3,19 +3,7 @@ package com.example.myfintech.ui.home
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,18 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -49,9 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myfintech.data.local.dao.CategorySpending
 import com.example.myfintech.data.local.database.DatabaseProvider
 import com.example.myfintech.data.local.pref.SessionManager
-import com.example.myfintech.data.local.entities.Transaction
 import com.example.myfintech.viewmodel.TransactionViewModel
 import kotlin.math.max
 
@@ -60,7 +43,7 @@ fun Analytic(modifier: Modifier = Modifier) {
     // --- SESSION EMAIL ---
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
+    val email by sessionManager.getEmail().collectAsState(initial = null)
 
     // --- DB + VIEWMODEL ---
     val db = remember { DatabaseProvider.getDatabase(context) }
@@ -68,85 +51,73 @@ fun Analytic(modifier: Modifier = Modifier) {
     val transactionViewModel = remember { TransactionViewModel(transactionDao) }
 
     // --- UI STATE ---
-    var selectedFilter by remember { mutableStateOf("All") }
-    var transactions by remember { mutableStateOf(emptyList<Transaction>()) }
-    var avgIncome by remember { mutableStateOf(0f) }
-    var avgExpense by remember { mutableStateOf(0f) }
+    val avgIncome by transactionViewModel.avgIncome.collectAsState()
+    val avgExpense by transactionViewModel.avgExpense.collectAsState()
+    val expenseByCategory by transactionViewModel.expenseByCategory.collectAsState()
+    val totalIncome by transactionViewModel.totalIncome.collectAsState()
+    val totalExpense by transactionViewModel.totalExpense.collectAsState()
 
-
-    val scope = rememberCoroutineScope()
-
-    // --- LOAD TRANSACTIONS ---
+    // --- LOAD DATA ---
     LaunchedEffect(email) {
-        if (!email.isNullOrEmpty()) {
-            transactions = transactionViewModel.getTransaction(email?:"")
-            avgIncome = transactionViewModel.getAVGIncome(email?:"")
-            avgExpense = transactionViewModel.getAVGExpense(email?:"")
-
-        }
+        email?.let { transactionViewModel.loadTransactions(it) }
     }
 
     Surface(
         color = Color(0xFFF3F4F6), // light gray background
         modifier = modifier.fillMaxSize()
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Header
+            item {
+                Column {
+                    Text(
+                        text = "Analytics",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Your spending insights",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+            }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                // Header
-                item {
-                    Column {
-                        Text(
-                            text = "Analytics",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Your spending insights",
-                            fontSize = 14.sp,
-                            color = Color(0xFF6B7280),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AnalyticsInfoCard(
+                        title = "Avg Income",
+                        amount = avgIncome.toRupiahFormat(),
+                        amountColor = Color(0xFF16A34A),
+                        icon = Icons.Filled.TrendingUp,
+                        iconBgColor = Color(0xFFD1FAE5),
+                        modifier = Modifier.weight(1f)
+                    )
+                    AnalyticsInfoCard(
+                        title = "Avg Expenses",
+                        amount = avgExpense.toRupiahFormat(),
+                        amountColor = Color(0xFFEF4444),
+                        icon = Icons.Filled.TrendingDown,
+                        iconBgColor = Color(0xFFFEE2E2),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
+            }
 
-                item {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        AnalyticsInfoCard(
-                            title = "Avg Income",
-                            amount = "Rp${avgIncome.toRupiahFormat()}",
-                            amountColor = Color(0xFF16A34A),
-                            icon = Icons.Filled.TrendingUp,
-                            iconBgColor = Color(0xFFD1FAE5),
-                            modifier = Modifier.weight(1f)
-                        )
-                        AnalyticsInfoCard(
-                            title = "Avg Expenses",
-                            amount = "Rp${avgExpense.toRupiahFormat()}",
-                            amountColor = Color(0xFFEF4444),
-                            icon = Icons.Filled.TrendingDown,
-                            iconBgColor = Color(0xFFFEE2E2),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                item {
-                    SpendingByCategoryCard()
-                }
-                item {
-                    IncomeVsExpensesCard()
-                }
+            item {
+                SpendingByCategoryCard(expenseByCategory)
+            }
+            item {
+                IncomeVsExpensesCard(totalIncome, totalExpense)
             }
         }
     }
@@ -202,28 +173,8 @@ private fun AnalyticsInfoCard(
 }
 
 @Composable
-private fun SpendingByCategoryCard() {
-    // --- SESSION EMAIL ---
-    val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
+private fun SpendingByCategoryCard(spendingData: List<CategorySpending>) {
 
-    // --- DB + VIEWMODEL ---
-    val db = remember { DatabaseProvider.getDatabase(context) }
-    val transactionDao = remember { db.transactionDao() }
-    val transactionViewModel = remember { TransactionViewModel(transactionDao) }
-
-    // --- UI STATE ---
-    var spendingByCategory by remember { mutableStateOf(emptyMap<String, Float>()) }
-
-    // --- LOAD DATA ---
-    LaunchedEffect(email) {
-        if (!email.isNullOrEmpty()) {
-            spendingByCategory = transactionViewModel.getExpenseByCategory(email ?: "")
-        }
-    }
-
-    // COLORS MATCH YOUR DATABASE CATEGORY KEYS
     val categoryColors = mapOf(
         "Food" to Color(0xFF3B82F6),
         "Transport" to Color(0xFF8B5CF6),
@@ -233,14 +184,7 @@ private fun SpendingByCategoryCard() {
         "Others" to Color(0xFF64748B)
     )
 
-    // --- DYNAMIC CATEGORY LIST FOR PIE CHART ---
-    val totalSpending = spendingByCategory.values.sum()
-
-    val categories = spendingByCategory.map { (name, amount) ->
-        val color = categoryColors[name] ?: Color.Gray
-        val percentage = if (totalSpending > 0) amount / totalSpending else 0f
-        name to Pair(color, percentage)
-    }
+    val totalSpending = spendingData.sumOf { it.total.toDouble() }.toFloat()
 
     Column(
         modifier = Modifier
@@ -258,43 +202,44 @@ private fun SpendingByCategoryCard() {
             color = Color(0xFF111827)
         )
 
-        // --- PIE CHART ---
-        Box(
-            modifier = Modifier
-                .size(140.dp)
-                .align(Alignment.CenterHorizontally),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val diameter = size.minDimension
-                var startAngle = -90f
+        if (spendingData.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .align(Alignment.CenterHorizontally),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val diameter = size.minDimension
+                    var startAngle = -90f
 
-                categories.forEach { (_, pair) ->
-                    val segmentColor = pair.first
-                    val percentage = pair.second
-                    val sweep = 360f * percentage
+                    spendingData.forEach { spending ->
+                        val segmentColor = categoryColors[spending.category] ?: Color.Gray
+                        val percentage = if (totalSpending > 0) spending.total / totalSpending else 0f
+                        val sweep = 360f * percentage
 
-                    drawArc(
-                        color = segmentColor,
-                        startAngle = startAngle,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        style = Stroke(width = diameter / 6)
-                    )
-                    startAngle += sweep
+                        drawArc(
+                            color = segmentColor,
+                            startAngle = startAngle,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            style = Stroke(width = diameter / 6)
+                        )
+                        startAngle += sweep
+                    }
                 }
             }
-        }
-
-        // --- LEGEND ---
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            spendingByCategory.forEach { (name, amount) ->
-                CategoryRow(
-                    label = name,
-                    amount = "Rp${amount.toInt()}",
-                    color = categoryColors[name] ?: Color.Gray
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                spendingData.forEach { (name, amount) ->
+                    CategoryRow(
+                        label = name,
+                        amount = amount.toRupiahFormat(),
+                        color = categoryColors[name] ?: Color.Gray
+                    )
+                }
             }
+        } else {
+            Text("No spending data available.", modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
@@ -331,32 +276,8 @@ private fun CategoryRow(label: String, amount: String, color: Color) {
 
 
 @Composable
-private fun IncomeVsExpensesCard() {
+private fun IncomeVsExpensesCard(totalIncome: Float, totalExpenses: Float) {
 
-    // --- SESSION EMAIL ---
-    val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
-
-    // --- DB + VIEWMODEL ---
-    val db = remember { DatabaseProvider.getDatabase(context) }
-    val transactionDao = remember { db.transactionDao() }
-    val transactionViewModel = remember { TransactionViewModel(transactionDao) }
-
-    // --- UI STATE ---
-    var totalIncome by remember { mutableStateOf(0f) }
-    var totalExpenses by remember { mutableStateOf(0f) }
-
-    // --- LOAD DATA ---
-    LaunchedEffect(email) {
-        if (!email.isNullOrEmpty()) {
-            val allData = transactionViewModel.getIncomeAndExpenses(email ?: "")
-            totalIncome = allData.first
-            totalExpenses = allData.second
-        }
-    }
-
-    // --- CHART RANGE ---
     val chartMaxY = max(totalIncome, totalExpenses).coerceAtLeast(1f)
     val yGridLevels = listOf(chartMaxY, chartMaxY * 0.75f, chartMaxY * 0.5f, chartMaxY * 0.25f, 0f)
     val yAxisLabels = yGridLevels.map { (it / 1000).toInt().toString() + "k" }
@@ -400,92 +321,39 @@ private fun IncomeVsExpensesCard() {
                 }
             }
 
-            // --- BAR CHART (Single Comparison) ---
+            // --- BAR CHART ---
             Canvas(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
             ) {
                 val scale = size.height / chartMaxY
-                val gridColor = Color(0xFFE5E7EB)
-                val gridStroke = 1.dp.toPx()
-                val dash = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                val barWidth = size.width / 4
 
-                // Grid
-                yGridLevels.forEachIndexed { index, level ->
-                    val yPos = size.height - (level * scale)
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(0f, yPos),
-                        end = Offset(size.width, yPos),
-                        strokeWidth = gridStroke,
-                        pathEffect = if (index != yGridLevels.lastIndex) dash else null
-                    )
-                }
-
-                val barWidth = size.width / 4f
-                val spacing = size.width / 4f
-
-                // EXPENSE BAR
-                val expenseHeight = totalExpenses * scale
-                drawRoundRect(
-                    color = Color(0xFFEF4444),
-                    topLeft = Offset(spacing, size.height - expenseHeight),
-                    size = Size(barWidth, expenseHeight),
-                    cornerRadius = CornerRadius(6.dp.toPx())
+                // Income Bar
+                drawRect(
+                    color = Color(0xFF34D399),
+                    topLeft = Offset(barWidth / 2, size.height - (totalIncome * scale)),
+                    size = Size(barWidth, totalIncome * scale)
                 )
 
-                // INCOME BAR
-                val incomeHeight = totalIncome * scale
-                drawRoundRect(
-                    color = Color(0xFF10B981),
-                    topLeft = Offset(spacing * 2 + barWidth, size.height - incomeHeight),
-                    size = Size(barWidth, incomeHeight),
-                    cornerRadius = CornerRadius(6.dp.toPx())
+                // Expense Bar
+                drawRect(
+                    color = Color(0xFFF87171),
+                    topLeft = Offset(barWidth * 2.5f, size.height - (totalExpenses * scale)),
+                    size = Size(barWidth, totalExpenses * scale)
                 )
             }
         }
-
-        // --- LEGEND ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LegendItem("Expenses", Color(0xFFEF4444))
-            Spacer(Modifier.width(24.dp))
-            LegendItem("Income", Color(0xFF10B981))
-        }
     }
 }
 
-
+@Preview(showBackground = true)
 @Composable
-private fun LegendItem(label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(color)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = label,
-            color = Color(0xFF374151),
-            fontSize = 14.sp
-        )
-    }
+fun AnalyticPreview() {
+    Analytic()
 }
 
-fun Float?.toRupiahFormat(): String {
-    return if (this == null || this.isNaN()) "0.0" else this.toString()
-}
-
-@Preview(showBackground = true, widthDp = 400, heightDp = 850)
-@Composable
-private fun PreviewAnalyticsPage() {
-    MaterialTheme {
-        Analytic()
-    }
+fun Float.toRupiahFormat(): String {
+    return "Rp${this.toInt()}"
 }
