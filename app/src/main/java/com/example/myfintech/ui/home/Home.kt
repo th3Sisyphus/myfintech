@@ -40,23 +40,23 @@ fun Home(
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
+    val email by sessionManager.getEmail().collectAsState(initial = null)
 
-    // Database + ViewModel
+    // --- DB + VIEWMODEL (Single Instance) ---
     val db = remember { DatabaseProvider.getDatabase(context) }
     val transactionDao = remember { db.transactionDao() }
     val transactionViewModel = remember { TransactionViewModel(transactionDao) }
 
-    // UI States
+    // --- UI STATE (Collected from ViewModel) ---
     var showTransactionDialog by remember { mutableStateOf(false) }
-    var reloadBalance by remember { mutableStateOf(false) }
-    var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+    val transactions by transactionViewModel.transactions.collectAsState()
+    val totalIncome by transactionViewModel.totalIncome.collectAsState()
+    val totalExpense by transactionViewModel.totalExpense.collectAsState()
+    val balance = totalIncome - totalExpense
 
-    // Load transactions
-    LaunchedEffect(email, reloadBalance) {
-        if (!email.isNullOrEmpty()) {
-            transactions = transactionViewModel.getTransaction(email?:"")
-        }
+    // --- LOAD DATA ---
+    LaunchedEffect(email) {
+        email?.let { transactionViewModel.loadTransactions(it) }
     }
 
     Scaffold(
@@ -74,18 +74,18 @@ fun Home(
             ) {
                 item { Header(onProfileClicked) }
 
-                item { BalanceCard(reloadBalance) }
+                item { BalanceCard(balance, totalIncome, totalExpense) }
 
                 item { AddTransactionButton { showTransactionDialog = true } }
 
-                item { RecentTransactions(transactions) }
+                item { RecentTransactions(transactions.take(5)) } // Show top 5
             }
 
             if (showTransactionDialog) {
                 AddTransactionDialog(
                     onDismiss = { showTransactionDialog = false },
                     onAddTransaction = {
-                        reloadBalance = !reloadBalance   // refresh everything
+                        // The ViewModel now automatically reloads the data upon insertion
                         showTransactionDialog = false
                     }
                 )
@@ -101,8 +101,8 @@ private fun Header(
     val context = LocalContext.current
     val session = remember { SessionManager(context) }
     val username by session.getFullname().collectAsState(initial = "")
-    val userInitial = if (!username.isNullOrBlank()) {
-        username!!.take(1).uppercase()
+    val userInitial = if (username.orEmpty().isNotBlank()) {
+        username?.take(1)?.uppercase()
     } else {
         "U"
     }
@@ -120,11 +120,12 @@ private fun Header(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = username?.substringBefore(" ") ?:"",
+                text = username?.substringBefore(" ") ?: "User",
                 color = Color(0xff0a0a0a),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
+
         }
 
         IconButton(
@@ -144,7 +145,7 @@ private fun Header(
                     )
             ) {
                 Text(
-                    text = userInitial,
+                    text = userInitial ?: "U",
                     color = Color.White,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
@@ -155,27 +156,7 @@ private fun Header(
 }
 
 @Composable
-private fun BalanceCard(reloadBalance: Boolean) {
-    val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val email by sessionManager.getEmail().collectAsState(initial = "")
-
-    val db = remember { DatabaseProvider.getDatabase(context) }
-    val transactionDao = remember { db.transactionDao() }
-    val transactionViewModel = remember { TransactionViewModel(transactionDao) }
-
-    var balance by remember { mutableStateOf(0f) }
-    var income by remember { mutableStateOf(0f) }
-    var expense by remember { mutableStateOf(0f) }
-
-    LaunchedEffect(email, reloadBalance) {
-        if (!email.isNullOrEmpty()) {
-            balance = transactionViewModel.getTotalBalance(email?:"")
-            income = transactionViewModel.getTotalIncome(email?:"")
-            expense = transactionViewModel.getTotalExpense(email?:"")
-        }
-    }
-
+private fun BalanceCard(balance: Float, income: Float, expense: Float) {
     val cardShape = RoundedCornerShape(14.dp)
 
     Column(
@@ -203,15 +184,15 @@ private fun BalanceCard(reloadBalance: Boolean) {
         }
 
         Text(
-            text = "Rp. $balance",
+            text = "Rp. ${balance.toInt()}",
             color = Color.White,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            InfoChip(Icons.Filled.ArrowDownward, "Income", "Rp $income", Modifier.weight(1f))
-            InfoChip(Icons.Filled.ArrowUpward, "Expenses", "Rp $expense", Modifier.weight(1f))
+            InfoChip(Icons.Filled.ArrowDownward, "Income", "Rp ${income.toInt()}", Modifier.weight(1f))
+            InfoChip(Icons.Filled.ArrowUpward, "Expenses", "Rp ${expense.toInt()}", Modifier.weight(1f))
         }
     }
 }
@@ -292,18 +273,17 @@ private fun RecentTransactions(transactions: List<Transaction>) {
                 transactions.forEach { tx ->
                     TransactionRow(
                         icon =
-                            if (tx.type == "income") Icons.Filled.ArrowUpward
-                            else Icons.Filled.ArrowDownward,
+                        if (tx.type == "income") Icons.Filled.ArrowUpward
+                        else Icons.Filled.ArrowDownward,
                         title = tx.title,
                         category = tx.category,
-                        amount = if (tx.type == "income") "+Rp${tx.amount}" else "-Rp${tx.amount}",
+                        amount = if (tx.type == "income") "+Rp${tx.amount.toInt()}" else "-Rp${tx.amount.toInt()}",
                         amountColor =
-                            if (tx.type == "income") Color(0xFF00A63E)
-                            else Color(0xFFE7000B),
+                        if (tx.type == "income") Color(0xFF00A63E)
+                        else Color(0xFFE7000B),
                         iconBgColor =
-                            if (tx.type == "income") Color(0xffdcfce7)
-                            else Color(0xffffe2e2),
-//                        date = tx.date
+                        if (tx.type == "income") Color(0xffdcfce7)
+                        else Color(0xffffe2e2),
                     )
                 }
             }

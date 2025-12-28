@@ -11,9 +11,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,11 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.myfintech.data.local.database.DatabaseProvider
+import com.example.myfintech.data.local.entities.Category
 import com.example.myfintech.data.local.pref.SessionManager
+import com.example.myfintech.viewmodel.CategoryViewModel
 import com.example.myfintech.viewmodel.TransactionViewModel
 import com.example.myfintech.ui.theme.buttonGradient
-
-// ML Kit Imports
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -42,49 +43,52 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 fun AddTransactionDialog(
     onDismiss: () -> Unit,
     onAddTransaction: () -> Unit
-){
-    // State for form fields
+) {
     var isExpense by remember { mutableStateOf(true) }
     var amount by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
-
     var category by remember { mutableStateOf("") }
-    val categoryOptions = listOf("Food", "Transport", "Shopping", "Health", "Salary", "Others")
     var expanded by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var categoryToDelete by remember { mutableStateOf<Category?>(null) }
 
-    // Colors
     val inputGray = Color(0xFFF3F4F6)
     val textGray = Color(0xFF6B7280)
-    val themeColor = Color(0xFF2B7FFF) // Warna utama aplikasi
+    val themeColor = Color(0xFF2B7FFF)
 
     val context = LocalContext.current
     val sessionManager = SessionManager(context)
-    val email by sessionManager.getEmail().collectAsState(initial = "")
+    val email by sessionManager.getEmail().collectAsState(initial = null)
 
-    // Database Setup
-    val __db = remember { DatabaseProvider.getDatabase(context) }
-    val __transactionDao = remember { __db.transactionDao() }
-    val __transactionViewModel = remember { TransactionViewModel(__transactionDao) }
+    val db = remember { DatabaseProvider.getDatabase(context) }
+    val transactionDao = remember { db.transactionDao() }
+    val categoryDao = remember { db.categoryDao() }
+    val transactionViewModel = remember { TransactionViewModel(transactionDao) }
+    val categoryViewModel = remember { CategoryViewModel(categoryDao) }
 
-    // --- OCR LOGIC START ---
+    val categories by categoryViewModel.categories.collectAsState()
+    val defaultCategories = listOf("Food", "Transport", "Shopping", "Health", "Salary", "Others")
+
+    LaunchedEffect(email) {
+        email?.let { userEmail ->
+            categoryViewModel.getCategories(userEmail)
+        }
+    }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { fileUri ->
+        uri?.let {
             try {
-                val image = InputImage.fromFilePath(context, fileUri)
+                val image = InputImage.fromFilePath(context, it)
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
-                        // Regex untuk mencari angka terbesar (Total Harga)
-                        val numberRegex = Regex("""[\d,]+""")
-
+                        val numberRegex = Regex("[\\d,]+")
                         val largestNum = numberRegex.findAll(visionText.text)
-                            .map { it.value.replace(",", "") } // Hapus koma ribuan
-                            .mapNotNull { it.toIntOrNull() }   // Ubah ke Int
-                            .maxOrNull()                       // Ambil angka terbesar
-
+                            .map { it.value.replace(",", "") }
+                            .mapNotNull { it.toIntOrNull() }
+                            .maxOrNull()
                         if (largestNum != null) {
                             amount = largestNum.toString()
                             Toast.makeText(context, "Detected amount: $amount", Toast.LENGTH_SHORT).show()
@@ -101,7 +105,42 @@ fun AddTransactionDialog(
             }
         }
     }
-    // --- OCR LOGIC END ---
+
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onAddCategory = { newCategoryName ->
+                email?.let {
+                    categoryViewModel.addCategory(newCategoryName, it)
+                    showAddCategoryDialog = false
+                } ?: Toast.makeText(context, "Could not add category. User email not found.", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    categoryToDelete?.let { category ->
+        AlertDialog(
+            onDismissRequest = { categoryToDelete = null },
+            title = { Text("Delete Category") },
+            text = { Text("Are you sure you want to delete the category '${category.name}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        categoryViewModel.deleteCategory(category)
+                        categoryToDelete = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { categoryToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -113,7 +152,6 @@ fun AddTransactionDialog(
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
-                // --- Header ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -136,7 +174,6 @@ fun AddTransactionDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // --- Expense / Income Toggle ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -145,7 +182,6 @@ fun AddTransactionDialog(
                         .background(Color(0xFFE5E7EB))
                         .padding(4.dp)
                 ) {
-                    // Expense Tab
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -162,7 +198,6 @@ fun AddTransactionDialog(
                         )
                     }
 
-                    // Income Tab
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -182,7 +217,6 @@ fun AddTransactionDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // --- Amount Input ---
                 Text("Amount", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
                 TextField(
                     value = amount,
@@ -202,14 +236,12 @@ fun AddTransactionDialog(
                     singleLine = true
                 )
 
-                // --- Scan Receipt Button (DIPERBAIKI) ---
-                // Ditaruh tepat di bawah input amount agar rapi
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End // Rata kanan
+                    horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(
-                        onClick = { launcher.launch("image/*") }, // Hanya menerima gambar
+                        onClick = { launcher.launch("image/*") },
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Icon(
@@ -230,7 +262,6 @@ fun AddTransactionDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // --- Title Input ---
                 Text("Title", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
                 TextField(
                     value = title,
@@ -251,57 +282,69 @@ fun AddTransactionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- Category Dropdown ---
                 Text("Category", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    TextField(
-                        value = category,
-                        onValueChange = {},
-                        readOnly = true,
-                        placeholder = { Text("Select a category", color = textGray) },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(inputGray),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = inputGray,
-                            unfocusedContainerColor = inputGray,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        )
-                    )
-                    ExposedDropdownMenu(
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ExposedDropdownMenuBox(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        categoryOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = {
-                                    category = option
-                                    expanded = false
-                                }
+                        TextField(
+                            value = category,
+                            onValueChange = {},
+                            readOnly = true,
+                            placeholder = { Text("Select a category", color = textGray) },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(inputGray),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = inputGray,
+                                unfocusedContainerColor = inputGray,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
                             )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            categories.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.name) },
+                                    onClick = {
+                                        category = option.name
+                                        expanded = false
+                                    },
+                                    trailingIcon = {
+                                        if (!defaultCategories.contains(option.name)) {
+                                            IconButton(onClick = { 
+                                                categoryToDelete = option
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Delete Category")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                         }
+                    }
+                    IconButton(onClick = { showAddCategoryDialog = true }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Category")
                     }
                 }
 
+
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // --- Action Buttons ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Cancel Button
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier
@@ -314,19 +357,19 @@ fun AddTransactionDialog(
                         Text("Cancel")
                     }
 
-                    // Add Transaction Button
                     Button(
                         onClick = {
-                            // Perbaikan validasi amount (menggunakan toFloatOrNull) agar tidak crash
                             if (amount.isNotEmpty()) {
-                                __transactionViewModel.insertTransaction(
-                                    email = email ?: "",
-                                    type = if (isExpense) "expense" else "income",
-                                    amount = amount.toFloatOrNull() ?: 0f,
-                                    title = title,
-                                    category = category.ifEmpty { "Others" }
-                                )
-                                onAddTransaction()
+                                email?.let { userEmail ->
+                                    transactionViewModel.insertTransaction(
+                                        email = userEmail,
+                                        type = if (isExpense) "expense" else "income",
+                                        amount = amount.toFloatOrNull() ?: 0f,
+                                        title = title,
+                                        category = category.ifEmpty { "Others" }
+                                    )
+                                    onAddTransaction()
+                                } ?: Toast.makeText(context, "Cannot add transaction, user not logged in.", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier
@@ -350,6 +393,42 @@ fun AddTransactionDialog(
         }
     }
 }
+
+@Composable
+fun AddCategoryDialog(
+    onDismiss: () -> Unit,
+    onAddCategory: (String) -> Unit
+) {
+    var newCategoryName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add New Category") },
+        text = {
+            OutlinedTextField(
+                value = newCategoryName,
+                onValueChange = { newCategoryName = it },
+                label = { Text("Category Name") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(onClick = {
+                if(newCategoryName.isNotBlank()) {
+                    onAddCategory(newCategoryName)
+                }
+            }) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 
 @Preview(showBackground = true)
 @Composable
