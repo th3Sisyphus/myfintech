@@ -84,7 +84,8 @@ fun Home(
                     onAddTransaction = {
                         email?.let { transactionViewModel.loadTransactions(it) }
                         showTransactionDialog = false
-                    }
+                    },
+                    transactionViewModel = transactionViewModel
                 )
             }
         }

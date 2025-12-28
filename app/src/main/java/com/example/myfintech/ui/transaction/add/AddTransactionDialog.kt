@@ -42,7 +42,8 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 @Composable
 fun AddTransactionDialog(
     onDismiss: () -> Unit,
-    onAddTransaction: () -> Unit
+    onAddTransaction: () -> Unit,
+    transactionViewModel: TransactionViewModel
 ) {
     var isExpense by remember { mutableStateOf(true) }
     var amount by remember { mutableStateOf("") }
@@ -61,9 +62,7 @@ fun AddTransactionDialog(
     val email by sessionManager.getEmail().collectAsState(initial = null)
 
     val db = remember { DatabaseProvider.getDatabase(context) }
-    val transactionDao = remember { db.transactionDao() }
     val categoryDao = remember { db.categoryDao() }
-    val transactionViewModel = remember { TransactionViewModel(transactionDao) }
     val categoryViewModel = remember { CategoryViewModel(categoryDao) }
 
     val categories by categoryViewModel.categories.collectAsState()
@@ -433,5 +432,5 @@ fun AddCategoryDialog(
 @Preview(showBackground = true)
 @Composable
 fun AddTransactionDialogPreview() {
-    AddTransactionDialog(onDismiss = {}, onAddTransaction = {})
+//    AddTransactionDialog(onDismiss = {}, onAddTransaction = {})
 }
