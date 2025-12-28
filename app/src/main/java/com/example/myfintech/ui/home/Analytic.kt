@@ -40,30 +40,26 @@ import kotlin.math.max
 
 @Composable
 fun Analytic(modifier: Modifier = Modifier) {
-    // --- SESSION EMAIL ---
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.getEmail().collectAsState(initial = null)
 
-    // --- DB + VIEWMODEL ---
     val db = remember { DatabaseProvider.getDatabase(context) }
     val transactionDao = remember { db.transactionDao() }
     val transactionViewModel = remember { TransactionViewModel(transactionDao) }
 
-    // --- UI STATE ---
     val avgIncome by transactionViewModel.avgIncome.collectAsState()
     val avgExpense by transactionViewModel.avgExpense.collectAsState()
     val expenseByCategory by transactionViewModel.expenseByCategory.collectAsState()
     val totalIncome by transactionViewModel.totalIncome.collectAsState()
     val totalExpense by transactionViewModel.totalExpense.collectAsState()
 
-    // --- LOAD DATA ---
     LaunchedEffect(email) {
         email?.let { transactionViewModel.loadTransactions(it) }
     }
 
     Surface(
-        color = Color(0xFFF3F4F6), // light gray background
+        color = Color(0xFFF3F4F6),
         modifier = modifier.fillMaxSize()
     ) {
         LazyColumn(

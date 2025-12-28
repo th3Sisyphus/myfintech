@@ -42,19 +42,16 @@ fun Home(
     val sessionManager = remember { SessionManager(context) }
     val email by sessionManager.getEmail().collectAsState(initial = null)
 
-    // --- DB + VIEWMODEL (Single Instance) ---
     val db = remember { DatabaseProvider.getDatabase(context) }
     val transactionDao = remember { db.transactionDao() }
     val transactionViewModel = remember { TransactionViewModel(transactionDao) }
 
-    // --- UI STATE (Collected from ViewModel) ---
     var showTransactionDialog by remember { mutableStateOf(false) }
     val transactions by transactionViewModel.transactions.collectAsState()
     val totalIncome by transactionViewModel.totalIncome.collectAsState()
     val totalExpense by transactionViewModel.totalExpense.collectAsState()
     val balance = totalIncome - totalExpense
 
-    // --- LOAD DATA ---
     LaunchedEffect(email) {
         email?.let { transactionViewModel.loadTransactions(it) }
     }
@@ -85,7 +82,7 @@ fun Home(
                 AddTransactionDialog(
                     onDismiss = { showTransactionDialog = false },
                     onAddTransaction = {
-                        // The ViewModel now automatically reloads the data upon insertion
+                        email?.let { transactionViewModel.loadTransactions(it) }
                         showTransactionDialog = false
                     }
                 )
