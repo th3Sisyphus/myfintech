@@ -34,6 +34,7 @@ import com.example.myfintech.data.local.pref.SessionManager
 import com.example.myfintech.viewmodel.CategoryViewModel
 import com.example.myfintech.viewmodel.TransactionViewModel
 import com.example.myfintech.ui.theme.buttonGradient
+import com.example.myfintech.utils.ReceiptParser
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -83,20 +84,17 @@ fun AddTransactionDialog(
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
-                        val numberRegex = Regex("[\\d,]+")
-                        val largestNum = numberRegex.findAll(visionText.text)
-                            .map { it.value.replace(",", "") }
-                            .mapNotNull { it.toIntOrNull() }
-                            .maxOrNull()
-                        if (largestNum != null) {
-                            amount = largestNum.toString()
-                            Toast.makeText(context, "Detected amount: $amount", Toast.LENGTH_SHORT).show()
+                        // Use ReceiptParser to intelligently extract the total amount
+                        val detectedAmount = ReceiptParser.extractTotalAmount(visionText.text)
+                        if (detectedAmount != null) {
+                            amount = detectedAmount.toString()
+                            Toast.makeText(context, "Total detected: Rp$amount", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "No amount detected", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "No total amount detected", Toast.LENGTH_SHORT).show()
                         }
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(context, "Failed to scan text", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Failed to scan receipt", Toast.LENGTH_SHORT).show()
                         Log.e("OCR", "Error: ${e.message}")
                     }
             } catch (e: Exception) {
@@ -235,31 +233,34 @@ fun AddTransactionDialog(
                     singleLine = true
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = { launcher.launch("image/*") },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                // Only show scan receipt button for expenses
+                if (isExpense) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Scan",
-                            tint = themeColor,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Scan Receipt (OCR)",
-                            color = themeColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        TextButton(
+                            onClick = { launcher.launch("image/*") },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Scan",
+                                tint = themeColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Scan Receipt (OCR)",
+                                color = themeColor,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 Text("Title", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(bottom = 8.dp))
                 TextField(
